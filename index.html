@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Shan 的小游戏站</title>
+  <meta name="description" content="自制小游戏合集 — 时间终结者等精选手作游戏">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8E%AE%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="assets/hub.css">
+</head>
+<body>
+  <div class="bg-orbs" aria-hidden="true"></div>
+
+  <header class="site-header">
+    <div class="brand">
+      <span class="brand-icon" aria-hidden="true">🎮</span>
+      <div>
+        <h1 class="site-title">Shan 的小游戏站</h1>
+        <p class="site-tagline">自制小游戏 · 纯静态 · 即开即玩</p>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="intro">
+      <h2>游戏库</h2>
+      <p>挑选一款，点开即玩。无需安装，手机与电脑皆可。</p>
+    </section>
+
+    <section class="game-grid" aria-label="游戏列表">
+      <article class="game-card">
+        <div class="card-badge">上线</div>
+        <div class="card-visual" aria-hidden="true">
+          <div class="clock-ring"></div>
+          <span class="card-emoji">⏱️</span>
+        </div>
+        <div class="card-body">
+          <h3 class="card-title">时间终结者 <span class="en">TIME STOPPER</span></h3>
+          <p class="card-blurb">考验时机与反应的时间系技能小游戏。卡住关键帧，冲上排行榜。</p>
+          <a class="play-btn" href="games/time-stopper/">开始游玩 →</a>
+        </div>
+      </article>
+
+      <article class="game-card placeholder" aria-hidden="false">
+        <div class="card-badge muted">敬请期待</div>
+        <div class="card-visual dim" aria-hidden="true">
+          <span class="card-emoji">🧩</span>
+        </div>
+        <div class="card-body">
+          <h3 class="card-title">更多游戏即将上线</h3>
+          <p class="card-blurb">新作筹备中，敬请关注本站更新。</p>
+          <span class="play-btn disabled" tabindex="-1" aria-disabled="true">即将开放</span>
+        </div>
+      </article>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>© 自制小游戏门户 · 本地打开 <code>index.html</code> 即可游玩</p>
+  </footer>
+</body>
+</html>

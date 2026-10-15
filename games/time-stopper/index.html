@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>时间终结者 TIME STOPPER</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #16213e;
+            --text-color: #e94560;
+            --accent: #0f3460;
+            --panel: #3f74d9;
+            --light: #e2e8f0;
+            --muted: #94a3b8;
+            --surface: rgba(22,33,62,0.75);
+
+            --rank-diamond: #b9f2ff;
+            --rank-platinum: #e5e4e2;
+            --rank-gold: #ffd700;
+            --rank-silver: #c0c0c0;
+            --rank-bronze: #cd7f32;
+        }
+
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', 'PingFang SC', sans-serif;
+            background: radial-gradient(circle at 20% 20%, rgba(233,69,96,0.15), transparent 35%),
+                        radial-gradient(circle at 80% 0%, rgba(63,116,217,0.2), transparent 30%),
+                        linear-gradient(120deg, #0f172a 0%, #0b1223 100%);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            justify-content: flex-start;
+            min-height: 100vh;
+            margin: 0;
+            overflow: hidden;
+            user-select: none;
+        }
+
+
+        h1 { margin: 0; }
+
+        /* 通用容器 */
+        .game-wrapper { position: relative; width: 100%; max-width: none; min-height: 100vh; text-align: center; padding: 0 30px 20px; }
+
+
+        /* 启动画面 */
+        #startScreen {
+            position: fixed;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            background: radial-gradient(circle at 50% 50%, rgba(233,69,96,0.15), transparent 45%),
+                        linear-gradient(140deg, #0f172a 0%, #132347 50%, #0f172a 100%);
+            z-index: 200;
+            animation: floatBg 8s ease-in-out infinite;
+        }
+        @keyframes floatBg {
+            0%,100% { background-position: 0 0, 0 0; }
+            50% { background-position: 20px 20px, -20px -30px; }
+        }
+        .start-card {
+            background: var(--surface);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 20px;
+            padding: 40px 60px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.45);
+            backdrop-filter: blur(10px);
+            animation: popIn 0.7s ease;
+        }
+        .pulse-ring {
+            position: absolute;
+            width: 200px; height: 200px;
+            border-radius: 50%;
+            border: 2px solid rgba(233,69,96,0.35);
+            animation: pulse 2.5s ease-out infinite;
+            pointer-events: none;
+        }
+        @keyframes pulse { from { transform: scale(0.7); opacity: 0.9; } to { transform: scale(1.3); opacity: 0; } }
+
+        /* 菜单 */
+        .menu-screen { display: none; width: 100%; background: var(--surface); padding: 30px; border-radius: 18px; box-shadow: 0 10px 30px rgba(0,0,0,0.35); }
+        .menu-header { margin-bottom: 20px; }
+        .menu-title { font-size: 2rem; letter-spacing: 2px; }
+        .menu-sub { color: var(--muted); margin-top: 6px; }
+        .hall-btn { width: 100%; padding: 14px; font-size: 1.1rem; background: var(--text-color); border-radius: 10px; color: white; border: none; cursor: pointer; box-shadow: 0 6px 16px rgba(233,69,96,0.35); }
+
+        .hall-btn:hover { filter: brightness(1.08); }
+        .mode-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; margin-top: 18px; }
+        .mode-card { background: var(--panel); border-radius: 12px; padding: 40px 10px; color: white; font-size: 1.2rem; cursor: pointer; transition: transform 0.15s ease, filter 0.2s ease; box-shadow: 0 8px 18px rgba(63,116,217,0.3); }
+        .mode-card:hover { transform: translateY(-4px); filter: brightness(1.05); }
+
+        /* 游戏界面 */
+        .game-screen { display: none; width: 100%; background: var(--surface); padding: 30px; border-radius: 18px; box-shadow: 0 10px 30px rgba(0,0,0,0.35); position: relative; z-index: 10; overflow: hidden; }
+
+        .top-bar { display: flex; justify-content: space-between; align-items: center; color: var(--muted); margin-bottom: 10px; gap: 12px; flex-wrap: wrap; }
+        .title-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .title-row h2 { margin: 0; font-size: 1.2rem; }
+        .pill { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.08); padding: 6px 12px; border-radius: 999px; color: #cbd5e1; }
+
+        /* 单人/挑战/无限区域 */
+        #standardArea { text-align: center; }
+        #instruction { margin: 10px 0 6px; }
+        #timer { font-size: 5rem; font-family: 'Courier New', monospace; font-weight: bold; color: #fff; text-shadow: 0 0 10px rgba(255,255,255,0.5); margin: 20px 0; }
+        .blind-mask { color: transparent !important; text-shadow: 0 0 20px rgba(255,255,255,0.2) !important; }
+        #statusArea { height: 20px; color: #aaa; margin-bottom: 20px; }
+        .main-action-btn { background: var(--text-color); color: white; border: none; padding: 15px 50px; font-size: 1.3rem; border-radius: 50px; cursor: pointer; box-shadow: 0 5px 15px rgba(233, 69, 96, 0.4); transition: transform 0.1s, filter 0.2s; font-weight: bold; }
+        .main-action-btn:hover { filter: brightness(1.08); }
+        .main-action-btn:active { transform: scale(0.96); }
+        .btn-secondary { background: var(--accent); color: white; border: none; padding: 12px 24px; font-size: 1rem; border-radius: 8px; cursor: pointer; margin: 5px; transition: transform 0.1s, filter 0.2s; font-weight: bold; }
+        .btn-secondary:hover { filter: brightness(1.08); }
+        .btn-secondary:active { transform: scale(0.96); }
+
+        /* 多人模式区域 */
+        #multiArea { display: none; margin-top: 10px; }
+        .multi-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; }
+
+        .player-card { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 16px; text-align: center; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.02); }
+        .player-card h3 { margin: 6px 0; color: #e2e8f0; }
+        .player-timer { font-size: 2.4rem; font-family: 'Courier New', monospace; margin: 8px 0; }
+        .player-status { color: var(--muted); height: 18px; margin-bottom: 8px; }
+        .player-btn { background: linear-gradient(135deg, #3f74d9, #6ba7ff); color: white; border: none; padding: 10px 18px; border-radius: 10px; font-weight: 700; cursor: pointer; transition: transform 0.1s, filter 0.2s; }
+        .player-btn:hover { filter: brightness(1.08); }
+        .player-btn:active { transform: scale(0.96); }
+
+        /* 霓虹灯边框 */
+        .neon-border { position: absolute; top: -5px; left: -5px; right: -5px; bottom: -5px; border-radius: 25px; background: linear-gradient(45deg, #ff0000, #ff7300, #fffb00, #48ff00, #00ffd5, #002bff, #7a00ff, #ff00c8, #ff0000); background-size: 400%; z-index: -1; filter: blur(5px); opacity: 0; transition: opacity 0.5s; }
+        .neon-active { opacity: 1; animation: glowing 20s linear infinite; }
+        @keyframes glowing { 0% { background-position: 0 0; } 50% { background-position: 400% 0; } 100% { background-position: 0 0; } }
+
+        /* 弹窗 */
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: none; justify-content: center; align-items: center; z-index: 150; backdrop-filter: blur(5px); }
+        .modal-content { background: white; color: #333; padding: 30px; border-radius: 15px; text-align: center; width: 80%; max-width: 480px; animation: popIn 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        @keyframes popIn { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+        /* 排行榜 */
+        .leaderboard-list { max-height: 240px; overflow-y: auto; text-align: left; margin-top: 15px; border-top: 1px solid #eee; }
+        .lb-item { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee; font-size: 0.92rem; }
+        .lb-rank-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 5px; }
+
+        #confetti { position: fixed; inset: 0; pointer-events: none; z-index: 50; }
+
+        @media (max-width: 1100px) {
+            .mode-grid { grid-template-columns: repeat(2,1fr); }
+            .multi-grid { grid-template-columns: repeat(2,1fr); }
+        }
+        @media (max-width: 640px) {
+            .multi-grid { grid-template-columns: 1fr; }
+        }
+
+    </style>
+</head>
+<body>
+    <canvas id="confetti"></canvas>
+
+    <!-- 启动画面 -->
+    <div id="startScreen">
+        <div class="pulse-ring"></div>
+        <div class="start-card">
+            <h1 style="color: var(--text-color);">TIME STOPPER</h1>
+            <p style="color: var(--muted); margin: 8px 0 20px;">时间终结者 · 英灵殿版</p>
+            <button class="main-action-btn" id="startBtn">START</button>
+            <br>
+            <button class="btn-secondary" id="exitBtn">EXIT</button>
+        </div>
+    </div>
+
+    <div class="game-wrapper">
+        <!-- 主菜单 -->
+        <div id="menuScreen" class="menu-screen">
+            <div class="menu-header">
+                <div class="menu-title">时间终结者<br>TIME STOPPER</div>
+                <div class="menu-sub">选择你的战场</div>
+            </div>
+            <button class="hall-btn" onclick="showLeaderboard()">查看英灵殿</button>
+            <div class="mode-grid">
+                <div class="mode-card" onclick="setMode('free')">自由模式</div>
+                <div class="mode-card" onclick="setMode('challenge')">挑战模式</div>
+                <div class="mode-card" onclick="setMode('infinite')">无限模式</div>
+                <div class="mode-card" onclick="setMode('multi')">多人对战</div>
+            </div>
+        </div>
+
+        <!-- 游戏界面 -->
+        <div id="gameScreen" class="game-screen">
+            <div class="neon-border" id="neonBorder"></div>
+
+            <div class="top-bar">
+                <div class="pill" id="modeDisplay">自由模式</div>
+                <div class="pill" id="levelDisplay"></div>
+                <div style="flex:1"></div>
+                <button class="btn-secondary" onclick="showLeaderboard()">查看英灵殿</button>
+                <button class="btn-secondary" onclick="backToMenu()">返回菜单</button>
+            </div>
+
+            <div id="standardArea">
+                <div class="title-row">
+                    <h2 id="instruction">目标: <span id="targetDisplay" style="color:white; font-size: 1.4em;">5.00</span> 秒</h2>
+                </div>
+                <div id="timer">0.00</div>
+                <div id="statusArea">点击开始启动计时</div>
+                <button id="actionBtn" class="main-action-btn">开始</button>
+            </div>
+
+            <div id="multiArea">
+                <div class="title-row">
+                    <h2 style="margin-bottom:4px;">多人对战 (最多四人)</h2>
+                    <div class="pill">共同目标: 5.00 秒</div>
+                </div>
+                <div class="multi-grid" id="multiGrid">
+                    <div class="player-card" data-player="1">
+                        <h3>Player 1</h3>
+                        <div class="player-timer" id="pTimer1">0.00</div>
+                        <div class="player-status" id="pStatus1">等待开始</div>
+                        <button class="player-btn" onclick="handleMultiAction(1)">开始</button>
+                    </div>
+                    <div class="player-card" data-player="2">
+                        <h3>Player 2</h3>
+                        <div class="player-timer" id="pTimer2">0.00</div>
+                        <div class="player-status" id="pStatus2">等待开始</div>
+                        <button class="player-btn" onclick="handleMultiAction(2)">开始</button>
+                    </div>
+                    <div class="player-card" data-player="3">
+                        <h3>Player 3</h3>
+                        <div class="player-timer" id="pTimer3">0.00</div>
+                        <div class="player-status" id="pStatus3">等待开始</div>
+                        <button class="player-btn" onclick="handleMultiAction(3)">开始</button>
+                    </div>
+                    <div class="player-card" data-player="4">
+                        <h3>Player 4</h3>
+                        <div class="player-timer" id="pTimer4">0.00</div>
+                        <div class="player-status" id="pStatus4">等待开始</div>
+                        <button class="player-btn" onclick="handleMultiAction(4)">开始</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 结算/登记 弹窗 -->
+    <div id="resultModal" class="modal-overlay">
+        <div class="modal-content">
+            <h2 id="modalTitle">挑战完成</h2>
+            <div id="modalRank" class="rank-badge rank-gold">GOLD</div>
+            <p id="modalDesc">误差: 0.04秒</p>
+            <div id="extraDesc" style="color:#555; margin-bottom:10px;"></div>
+            <div id="registerForm" style="display:none; margin-top:10px;">
+                <p style="font-size:0.9rem; color:#666;">创造了新纪录！请在英灵殿留下你的名字：</p>
+                <input type="text" id="playerName" placeholder="输入名字 (MAX 8字符)" maxlength="8" 
+                       style="padding:10px; width:60%; border:1px solid #ccc; border-radius:5px;">
+                <br><br>
+                <button onclick="submitScore()">登记入榜</button>
+                <button class="btn-secondary" style="background:#999;" onclick="closeModal()">不登记</button>
+            </div>
+            <div id="nonRegisterActions" style="margin-top:10px;">
+                <button onclick="closeModal()">继续</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 排行榜展示 弹窗 -->
+    <div id="leaderboardModal" class="modal-overlay">
+        <div class="modal-content" style="max-width: 520px;">
+            <h2>英灵殿 (Hall of Fame)</h2>
+            <div style="display:flex; justify-content:center; gap:8px; margin-bottom:10px; flex-wrap: wrap;">
+                <button onclick="renderLeaderboard('diamond')" style="font-size:0.85rem; padding:6px 10px;">💎 钻石</button>
+                <button onclick="renderLeaderboard('gold')" style="font-size:0.85rem; padding:6px 10px;">🥇 黄金</button>
+                <button onclick="renderLeaderboard('silver')" style="font-size:0.85rem; padding:6px 10px;">🥈 白银</button>
+                <button onclick="renderLeaderboard('infinite')" style="font-size:0.85rem; padding:6px 10px;">♾️ 无限模式</button>
+            </div>
+            <div id="lbContent" class="leaderboard-list"></div>
+            <br>
+            <button class="btn-secondary" onclick="document.getElementById('leaderboardModal').style.display='none'">关闭</button>
+        </div>
+    </div>
+
+    <script>
+        // === 全局状态 ===
+        const state = {
+            mode: 'free', // free, challenge, infinite, multi
+            isRunning: false,
+            startTime: 0,
+            timerInterval: null,
+            targetTime: 5.00,
+            level: 1,
+            p1Score: null,
+            multiTurn: 1,
+            infiniteCount: 0,
+            infiniteTolerance: 0.1,
+            currentTolerance: 0.1,
+            multiPlayers: [],
+        };
+
+        // 闯关配置
+        const levels = [
+            { target: 5.00, blind: false, tolerance: 0.1, desc: "Level 1: 热身" },
+            { target: 3.00, blind: true, tolerance: 0.2, desc: "Level 2: 盲感 (数字消失)" },
+            { target: 7.77, blind: false, tolerance: 0.05, desc: "Level 3: 幸运7 (高精度)" },
+            { target: 10.00, blind: true, tolerance: 0.15, desc: "Level 4: 十秒挑战 (盲感)" },
+            { target: 5.00, blind: true, tolerance: 0.02, desc: "Level 5: 最终试炼 (神之手)" }
+        ];
+        const infinitePool = [
+            { target: 4.00, blind: false, tolerance: 0.12, desc: "热身" },
+            { target: 6.00, blind: true, tolerance: 0.14, desc: "盲感" },
+            { target: 7.77, blind: false, tolerance: 0.07, desc: "幸运7" },
+            { target: 3.33, blind: false, tolerance: 0.08, desc: "短跑" },
+            { target: 9.99, blind: true, tolerance: 0.12, desc: "马拉松" }
+        ];
+
+        // 音效
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playTone(freq, type, duration) {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.type = type; osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+            osc.start(); osc.stop(audioCtx.currentTime + duration);
+        }
+        function playSound(event) {
+            if(audioCtx.state === 'suspended') audioCtx.resume();
+            if (event === 'tick') playTone(800, 'triangle', 0.05);
+            if (event === 'win') { playTone(523, 'square', 0.1); setTimeout(() => playTone(784, 'square', 0.1), 100); setTimeout(() => playTone(1046, 'square', 0.4), 200); }
+            if (event === 'lose') playTone(150, 'sawtooth', 0.4);
+        }
+
+        // DOM 引用
+        const startScreen = document.getElementById('startScreen');
+        const menuScreen = document.getElementById('menuScreen');
+        const gameScreen = document.getElementById('gameScreen');
+        const timerEl = document.getElementById('timer');
+        const actionBtn = document.getElementById('actionBtn');
+        const targetDisplay = document.getElementById('targetDisplay');
+        const neonBorder = document.getElementById('neonBorder');
+        const resultModal = document.getElementById('resultModal');
+        const standardArea = document.getElementById('standardArea');
+        const multiArea = document.getElementById('multiArea');
+
+        document.getElementById('startBtn').onclick = enterMenu;
+        document.getElementById('exitBtn').onclick = () => {
+            alert('感谢游玩！如需退出，请关闭页面或标签。');
+        };
+
+        function enterMenu() {
+            startScreen.style.display = 'none';
+            menuScreen.style.display = 'block';
+        }
+
+        // 核心逻辑
+        function setMode(mode) {
+            state.mode = mode;
+            menuScreen.style.display = 'none';
+            gameScreen.style.display = 'block';
+            resetGameUI();
+            document.getElementById('levelDisplay').textContent = "";
+            standardArea.style.display = 'block';
+            multiArea.style.display = 'none';
+
+            if (mode === 'free') {
+                document.getElementById('modeDisplay').textContent = "自由模式";
+                let t = prompt("请输入目标秒数 (1-60):", "5");
+                state.targetTime = Math.min(Math.max(parseFloat(t) || 5.00, 1), 60);
+                targetDisplay.textContent = state.targetTime.toFixed(2);
+            } else if (mode === 'challenge') {
+                document.getElementById('modeDisplay').textContent = "闯关模式";
+                state.level = 1; setupLevel();
+            } else if (mode === 'infinite') {
+                document.getElementById('modeDisplay').textContent = "无限模式";
+                state.infiniteCount = 0;
+                setupInfiniteRound();
+                document.getElementById('statusArea').textContent = "一条命，连胜越多越强！";
+            } else if (mode === 'multi') {
+                document.getElementById('modeDisplay').textContent = "多人对战";
+                standardArea.style.display = 'none';
+                multiArea.style.display = 'block';
+                setupMulti();
+            }
+        }
+
+        function setupLevel() {
+            const cfg = levels[state.level - 1];
+            state.targetTime = cfg.target;
+            state.currentTolerance = cfg.tolerance;
+            targetDisplay.textContent = cfg.target.toFixed(2);
+            document.getElementById('levelDisplay').textContent = cfg.desc;
+            document.getElementById('statusArea').textContent = "准备就绪";
+        }
+
+        function setupInfiniteRound() {
+            const cfg = infinitePool[Math.floor(Math.random() * infinitePool.length)];
+            state.targetTime = cfg.target;
+            state.currentTolerance = cfg.tolerance;
+            targetDisplay.textContent = cfg.target.toFixed(2);
+            document.getElementById('levelDisplay').textContent = `${cfg.desc} | 连胜 ${state.infiniteCount}`;
+            document.getElementById('statusArea').textContent = "保持专注！";
+            timerEl.classList.remove('blind-mask');
+        }
+
+        function setupMulti() {
+            state.multiPlayers = [1,2,3,4].map(id => ({ id, isRunning:false, startTime:0, diff:null, interval:null }));
+            [1,2,3,4].forEach(i => {
+                document.getElementById(`pTimer${i}`).textContent = '0.00';
+                document.getElementById(`pStatus${i}`).textContent = '等待开始';
+                const btn = document.querySelector(`[data-player="${i}"] .player-btn`);
+                btn.textContent = '开始'; btn.disabled = false;
+            });
+        }
+
+        function backToMenu() {
+            gameScreen.style.display = 'none';
+            menuScreen.style.display = 'block';
+            stopGameLogic();
+        }
+
+        actionBtn.addEventListener('click', handleAction);
+        document.body.onkeyup = (e) => { if(e.code === "Space" && gameScreen.style.display === 'block' && state.mode !== 'multi') handleAction(); };
+
+        function handleAction() {
+            if (state.mode === 'multi') return; // 多人模式使用独立按键
+            if (!state.isRunning) {
+                state.isRunning = true;
+                state.startTime = Date.now();
+                actionBtn.textContent = "停止";
+                actionBtn.style.backgroundColor = "#e94560";
+                document.getElementById('statusArea').textContent = "计时中...";
+                neonBorder.classList.remove('neon-active');
+                timerEl.classList.remove('blind-mask');
+                state.timerInterval = setInterval(() => {
+                    const elapsed = (Date.now() - state.startTime) / 1000;
+                    timerEl.textContent = elapsed.toFixed(2);
+                    if ((state.mode === 'challenge' || state.mode === 'infinite') && shouldBlind(elapsed)) {
+                        timerEl.classList.add('blind-mask');
+                    }
+                }, 16);
+            } else {
+                stopGameLogic();
+            }
+        }
+
+        function shouldBlind(elapsed) {
+            if (state.mode === 'challenge') return levels[state.level-1].blind && elapsed > state.targetTime * 0.5;
+            if (state.mode === 'infinite') return elapsed > state.targetTime * 0.5 && state.targetTime >= 5.5;
+            return false;
+        }
+
+        function stopGameLogic() {
+            if (!state.isRunning) return;
+            state.isRunning = false;
+            clearInterval(state.timerInterval);
+            const stopTime = (Date.now() - state.startTime) / 1000;
+            timerEl.textContent = stopTime.toFixed(2);
+            timerEl.classList.remove('blind-mask');
+            actionBtn.textContent = "开始";
+            actionBtn.style.backgroundColor = "";
+            processResult(stopTime);
+        }
+
+        function processResult(finalTime) {
+            const diff = Math.abs(finalTime - state.targetTime);
+            const rank = calculateRank(diff);
+
+            if (state.mode === 'free') {
+                showResultModal(rank, diff);
+            } else if (state.mode === 'challenge') {
+                const cfg = levels[state.level-1];
+                if (diff <= cfg.tolerance) {
+                    playSound('win');
+                    neonBorder.classList.add('neon-active');
+                    setTimeout(() => {
+                        if (state.level < levels.length) {
+                            alert(`🎉 恭喜通过 Level ${state.level}!\n误差: ${diff.toFixed(3)}秒\n下一关难度提升！`);
+                            state.level++; setupLevel(); resetGameUI();
+                        } else {
+                            fireConfetti();
+                            showResultModal('diamond', diff, "全关卡制霸！");
+                        }
+                    }, 400);
+                } else {
+                    playSound('lose');
+                    document.getElementById('statusArea').textContent = `失败... 误差 ${diff.toFixed(3)} > 允许 ${cfg.tolerance}`;
+                }
+            } else if (state.mode === 'infinite') {
+                if (diff <= state.currentTolerance) {
+                    state.infiniteCount++;
+                    playSound('win');
+                    document.getElementById('statusArea').textContent = `连胜 ${state.infiniteCount}! 继续！`;
+                    resetGameUI();
+                    setupInfiniteRound();
+                } else {
+                    playSound('lose');
+                    showInfiniteFail(diff);
+                }
+            }
+        }
+
+        function calculateRank(diff) {
+            if (diff <= 0.01) return 'diamond';
+            if (diff <= 0.03) return 'platinum';
+            if (diff <= 0.08) return 'gold';
+            if (diff <= 0.15) return 'silver';
+            return 'bronze';
+        }
+
+        function resetGameUI() {
+            state.isRunning = false;
+            clearInterval(state.timerInterval);
+            timerEl.textContent = "0.00";
+            document.getElementById('statusArea').textContent = "准备就绪";
+            neonBorder.classList.remove('neon-active');
+            timerEl.classList.remove('blind-mask');
+            actionBtn.textContent = "开始";
+            actionBtn.style.backgroundColor = "";
+        }
+
+        // 多人模式逻辑
+        function handleMultiAction(id) {
+            const player = state.multiPlayers.find(p => p.id === id);
+            if (!player) return;
+            const timerDom = document.getElementById(`pTimer${id}`);
+            const statusDom = document.getElementById(`pStatus${id}`);
+            const btn = document.querySelector(`[data-player="${id}"] .player-btn`);
+
+            if (!player.isRunning) {
+                player.isRunning = true;
+                player.startTime = Date.now();
+                statusDom.textContent = '计时中...';
+                btn.textContent = '停止';
+                player.interval = setInterval(() => {
+                    const elapsed = (Date.now() - player.startTime) / 1000;
+                    timerDom.textContent = elapsed.toFixed(2);
+                }, 16);
+            } else {
+                player.isRunning = false;
+                clearInterval(player.interval);
+                const stopTime = (Date.now() - player.startTime) / 1000;
+                const diff = Math.abs(stopTime - 5.00);
+                player.diff = diff;
+                timerDom.textContent = stopTime.toFixed(2);
+                statusDom.textContent = `误差 ${diff.toFixed(3)}s`;
+                btn.textContent = '已完成';
+                btn.disabled = true;
+                checkMultiResult();
+            }
+        }
+
+        function checkMultiResult() {
+            const finished = state.multiPlayers.filter(p => p.diff !== null);
+            if (finished.length === 0) return;
+            if (finished.length < 2) { document.getElementById('statusArea').textContent = `已完成 ${finished.length}/4`; return; }
+            if (finished.length === state.multiPlayers.length) {
+                const sorted = [...finished].sort((a,b) => a.diff - b.diff);
+                const best = sorted[0];
+                const runner = sorted[1];
+                let message = `⚔️ 对战结束 ⚔️\n\n`;
+                finished.forEach(p => { message += `P${p.id} 误差: ${p.diff.toFixed(3)}s\n`; });
+                message += `\n🏆 胜者: Player ${best.id}`;
+                if (best.diff === runner.diff) message += " (平局)";
+                fireConfetti();
+                alert(message);
+                setMode('multi');
+            }
+        }
+
+        // 弹窗与排行榜
+        let currentRecord = null;
+        function showResultModal(rank, diff, titleOverride) {
+            const modal = document.getElementById('resultModal');
+            const rTitle = document.getElementById('modalTitle');
+            const rRank = document.getElementById('modalRank');
+            const rDesc = document.getElementById('modalDesc');
+            const extraDesc = document.getElementById('extraDesc');
+            const regForm = document.getElementById('registerForm');
+            const noReg = document.getElementById('nonRegisterActions');
+
+            rTitle.textContent = titleOverride || "挑战结算";
+            rRank.className = `rank-badge rank-${rank}`;
+            rRank.textContent = rank.toUpperCase();
+            rDesc.textContent = `误差: ${diff.toFixed(3)} 秒`;
+            extraDesc.textContent = '';
+
+            if (['diamond', 'platinum', 'gold'].includes(rank)) {
+                playSound('win');
+                if(rank === 'diamond') fireConfetti();
+                neonBorder.classList.add('neon-active');
+                regForm.style.display = 'block';
+                noReg.style.display = 'none';
+                currentRecord = { type: 'ranked', rank, diff, date: new Date().toLocaleDateString() };
+            } else {
+                playSound('lose');
+                regForm.style.display = 'none';
+                noReg.style.display = 'block';
+                currentRecord = null;
+            }
+            modal.style.display = 'flex';
+        }
+
+        function showInfiniteFail(diff) {
+            const modal = document.getElementById('resultModal');
+            const rTitle = document.getElementById('modalTitle');
+            const rRank = document.getElementById('modalRank');
+            const rDesc = document.getElementById('modalDesc');
+            const extraDesc = document.getElementById('extraDesc');
+            const regForm = document.getElementById('registerForm');
+            const noReg = document.getElementById('nonRegisterActions');
+
+            rTitle.textContent = "无限模式终结";
+            rRank.className = 'rank-badge rank-platinum';
+            rRank.textContent = 'INFINITE';
+            rDesc.textContent = `误差: ${diff.toFixed(3)} 秒`;
+            extraDesc.textContent = `连胜次数：${state.infiniteCount}`;
+
+            regForm.style.display = 'block';
+            noReg.style.display = 'none';
+            currentRecord = { type: 'infinite', count: state.infiniteCount, date: new Date().toLocaleDateString() };
+            modal.style.display = 'flex';
+        }
+
+        function closeModal() {
+            document.getElementById('resultModal').style.display = 'none';
+            if (state.mode === 'infinite') {
+                setMode('infinite');
+            }
+        }
+
+        function submitScore() {
+            const nameInput = document.getElementById('playerName');
+            const name = nameInput.value.trim() || "无名氏";
+            let db = JSON.parse(localStorage.getItem('timeGameDB')) || [];
+
+            if (currentRecord?.type === 'infinite') {
+                db.push({ type: 'infinite', name, count: currentRecord.count, date: currentRecord.date });
+            } else if (currentRecord) {
+                db.push({ type: 'ranked', name, rank: currentRecord.rank, diff: currentRecord.diff, date: currentRecord.date });
+            }
+
+            localStorage.setItem('timeGameDB', JSON.stringify(db));
+            alert("登记成功！已载入英灵殿。");
+            closeModal();
+            nameInput.value = "";
+        }
+
+        function showLeaderboard() {
+            document.getElementById('leaderboardModal').style.display = 'flex';
+            renderLeaderboard('diamond');
+        }
+
+        function renderLeaderboard(filter) {
+            const list = document.getElementById('lbContent');
+            list.innerHTML = "";
+            let db = JSON.parse(localStorage.getItem('timeGameDB')) || [];
+
+            if (filter === 'infinite') {
+                const filtered = db.filter(item => item.type === 'infinite').sort((a,b) => (b.count||0) - (a.count||0));
+                if (filtered.length === 0) { list.innerHTML = "<div style='padding:20px; text-align:center; color:#999;'>暂无数据，去冲击连胜吧！</div>"; return; }
+                filtered.forEach((item, index) => {
+                    const row = document.createElement('div');
+                    row.className = 'lb-item';
+                    row.innerHTML = `
+                        <div style="flex:1;">
+                            <span class="lb-rank-dot" style="background:#8b5cf6"></span>
+                            <b>#${index + 1} ${item.name}</b>
+                        </div>
+                        <div style="flex:1; text-align:right;">连胜: ${item.count}</div>
+                    `;
+                    list.appendChild(row);
+                });
+                return;
+            }
+
+            const filtered = db.filter(item => (item.type === 'ranked' || !item.type) && item.rank === filter)
+                                .sort((a, b) => a.diff - b.diff);
+            if (filtered.length === 0) { list.innerHTML = "<div style='padding:20px; text-align:center; color:#999;'>暂无数据，快去挑战吧！</div>"; return; }
+            filtered.forEach((item, index) => {
+                const colorMap = { diamond: '#b9f2ff', platinum: '#e5e4e2', gold: '#ffd700', silver: '#c0c0c0' };
+                const row = document.createElement('div');
+                row.className = 'lb-item';
+                row.innerHTML = `
+                    <div style="flex:1;">
+                        <span class="lb-rank-dot" style="background:${colorMap[filter] || '#cd7f32'}"></span>
+                        <b>#${index + 1} ${item.name}</b>
+                    </div>
+                    <div style="flex:1; text-align:right; font-family:monospace;">误差: ${(item.diff || 0).toFixed(3)}s</div>
+                `;
+                list.appendChild(row);
+            });
+        }
+
+        // 纸屑特效
+        const canvas = document.getElementById("confetti");
+        const ctx = canvas.getContext("2d");
+        let particles = [];
+        window.onresize = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; };
+        window.onresize();
+        function fireConfetti() {
+            for (let i = 0; i < 100; i++) {
+                particles.push({ x: window.innerWidth / 2, y: window.innerHeight / 2, vx: (Math.random() - 0.5) * 10, vy: (Math.random() - 0.5) * 10, color: `hsl(${Math.random()*360}, 100%, 50%)`, life: 100 });
+            }
+            animateConfetti();
+        }
+        function animateConfetti() {
+            if (particles.length === 0) return;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            for (let i = 0; i < particles.length; i++) {
+                let p = particles[i];
+                p.x += p.vx; p.y += p.vy; p.life--;
+                ctx.fillStyle = p.color; ctx.globalAlpha = p.life / 100;
+                ctx.fillRect(p.x, p.y, 5, 5);
+                if (p.life <= 0) { particles.splice(i, 1); i--; }
+            }
+            requestAnimationFrame(animateConfetti);
+        }
+    </script>
+</body>
+</html>
