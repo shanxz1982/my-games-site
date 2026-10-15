@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Shan 的小游戏站</title>
-  <meta name="description" content="自制小游戏合集 — PS5 风格游戏库 · 时间终结者等精选手作游戏">
+  <meta name="description" content="自制小游戏合集 — PS5 风格游戏库 · 时间终结者 · 投骰足球经理">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8E%AE%3C/text%3E%3C/svg%3E">
   <link rel="stylesheet" href="assets/hub.css">
 </head>
@@ -57,13 +57,14 @@
           <div class="tile-cover"><span class="emoji">⏱️</span></div>
           <div class="tile-body"><h3>时间终结者</h3><p>TIME STOPPER</p></div>
         </a>
-        <div class="tile locked" role="option" aria-selected="false" tabindex="-1"
-             data-title="更多游戏即将上线" data-en="COMING SOON"
-             data-blurb="新作筹备中，敬请关注本站更新。"
-             data-meta="敬请期待" data-emoji="🧩" data-locked="1">
-          <div class="tile-cover dim"><span class="emoji">🧩</span></div>
-          <div class="tile-body"><h3>敬请期待</h3><p>COMING SOON</p></div>
-        </div>
+        <a class="tile" role="option" aria-selected="false" tabindex="-1"
+           data-title="投骰子吧！创造我的球会" data-en="DICE FOOTBALL"
+           data-blurb="掷骰驱动的足球经理：中超/中甲、战术板、转会球探、多槽存档与生涯殿堂。"
+           data-meta="经理生涯 / 战术 / 转会 / 存档"
+           data-emoji="⚽" data-cover="football" href="games/dice-football/">
+          <div class="tile-cover cover-football"><span class="emoji">⚽</span><span class="cover-dice" aria-hidden="true">🎲</span></div>
+          <div class="tile-body"><h3>投骰子吧！创造我的球会</h3><p>DICE FOOTBALL</p></div>
+        </a>
         <div class="tile locked" role="option" aria-selected="false" tabindex="-1"
              data-title="神秘新作" data-en="LOCKED"
              data-blurb="槽位预留中……下一部作品将在此亮相。"
@@ -109,6 +110,11 @@
         heroBlurb.textContent = blurb;
         heroMeta.textContent = meta;
         coverEmoji.textContent = emoji;
+        const art = document.querySelector('.hero-art');
+        if (art) {
+          art.classList.toggle('theme-football', tile.dataset.cover === 'football');
+          art.classList.toggle('theme-time', tile.dataset.cover !== 'football');
+        }
         if (locked) {
           heroPlay.removeAttribute('href');
           heroPlay.textContent = '即将开放';

@@ -431,3 +431,25 @@ body {
   .bg-stage::before, .bg-stage::after, .hero-art .cover-ring { animation: none !important; }
   .tile, .btn-play, .hero { transition: none !important; }
 }
+
+/* Dice Football cover art */
+.tile-cover.cover-football {
+  background:
+    radial-gradient(circle at 40% 40%, rgba(58, 209, 123, 0.35), transparent 50%),
+    radial-gradient(circle at 75% 70%, rgba(94, 200, 255, 0.2), transparent 45%),
+    linear-gradient(155deg, #0a2818 0%, #0c1830 45%, #101820 100%);
+}
+.tile-cover.cover-football .cover-dice {
+  position: absolute;
+  right: 14px;
+  bottom: 12px;
+  font-size: 1.35rem;
+  opacity: 0.9;
+  filter: drop-shadow(0 0 8px rgba(94, 200, 255, 0.5));
+}
+.hero-art.theme-football {
+  background:
+    radial-gradient(circle at 40% 45%, rgba(58, 209, 123, 0.4), transparent 50%),
+    radial-gradient(circle at 70% 60%, rgba(94, 200, 255, 0.22), transparent 45%),
+    linear-gradient(145deg, #061a12 0%, #0a1628 50%, #0c1020 100%);
+}

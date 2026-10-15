@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>投骰子吧！创造我的球会</title>
+<meta name="description" content="掷骰足球经理 — 中超/中甲 · 战术 · 转会 · 生涯存档"/>
+<link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+<a class="back-link" href="../../">← 返回游戏站</a>
+
+<!-- Splash -->
+<div id="splash" class="screen">
+  <div class="splash-wrap">
+    <div class="ball"></div>
+    <div class="center-col" style="position:absolute;inset:0;pointer-events:none">
+      <div class="logo">投骰子吧！创造我的球会</div>
+      <div class="subtitle">掷骰驱动的足球经理 · 中超 / 中甲 / 杯赛</div>
+      <div class="splash-badge">DICE FOOTBALL MANAGER</div>
+    </div>
+    <div class="press-any">按任意键继续</div>
+  </div>
+</div>
+
+<!-- Main Menu -->
+<div id="menu" class="screen hidden">
+  <div class="panel" style="min-width:min(420px,92vw)">
+    <div class="title" style="text-align:center">投骰子吧！创造我的球会</div>
+    <div class="subtitle" style="text-align:center;margin-bottom:14px">中超 · 中甲 · 足协杯 · 世界冠军杯</div>
+    <div class="col">
+      <button id="btnNew" class="btn cyan">经理生涯 · 新游戏</button>
+      <button id="btnStory" class="btn primary">故事模式 · 营救公主</button>
+      <button id="btnContinue" class="btn">继续游戏 / 存档槽</button>
+      <button id="btnHallOfFame" class="btn">本地殿堂 / 纪录</button>
+      <button id="btnCloudLB" class="btn">全球排行榜</button>
+      <button id="btnImportExport" class="btn">导入 / 导出存档</button>
+      <button id="btnQuit" class="btn danger">退出</button>
+    </div>
+  </div>
+</div>
+
+<!-- Save slots modal -->
+<div id="slotsModal" class="modal-bg hidden">
+  <div class="panel modal">
+    <div class="title" style="font-size:1.3rem">存档槽 · 档案</div>
+    <div class="subtitle" style="margin-bottom:10px">选择槽位加载，或新建游戏时写入空槽</div>
+    <div id="slotsList" class="list"></div>
+    <div class="field" style="margin-top:10px">
+      <label>玩家昵称（档案名）</label>
+      <input id="profileNick" class="input" placeholder="例如：Shan教练" maxlength="24"/>
+    </div>
+    <div class="row" style="margin-top:12px">
+      <button class="btn" id="slotsClose">关闭</button>
+      <button class="btn primary" id="slotsLoad">加载所选槽</button>
+      <button class="btn warn" id="slotsDelete">清空所选槽</button>
+    </div>
+  </div>
+</div>
+
+<!-- New Game -->
+<div id="newgame" class="screen hidden">
+  <div class="panel" style="min-width:min(820px,96vw);max-width:960px">
+    <div class="title">新游戏设置</div>
+    <div class="grid two" style="margin-top:10px">
+      <div class="field">
+        <label>主教练姓名</label>
+        <input id="mgrName" class="input" placeholder="例如：李教练" value="新晋教练"/>
+      </div>
+      <div class="field">
+        <label>偏好阵型</label>
+        <select id="mgrForm" class="input">
+          <option value="4-3-3">4-3-3</option>
+          <option value="4-4-2">4-4-2</option>
+          <option value="3-5-2">3-5-2</option>
+          <option value="4-2-3-1">4-2-3-1</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>存档槽</label>
+        <select id="newSlotSel" class="input">
+          <option value="0">槽位 1</option>
+          <option value="1">槽位 2</option>
+          <option value="2">槽位 3</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>档案昵称</label>
+        <input id="newNick" class="input" placeholder="本地档案显示名"/>
+      </div>
+    </div>
+    <div class="grid two" style="margin-top:12px">
+      <div class="card">
+        <div class="subtitle">选择真实球会</div>
+        <div class="field"><label>联赛</label>
+          <select id="realLeagueSel" class="input"><option value="CSL">中超联赛</option><option value="CL1">中甲联赛</option></select>
+        </div>
+        <div class="field"><label>球队</label><select id="realTeamSel" class="input"></select></div>
+        <button id="chooseReal" class="btn primary">以真实球会开始</button>
+      </div>
+      <div class="card">
+        <div class="subtitle">创建属于你的球会</div>
+        <div class="grid two">
+          <div class="field"><label>球队名称</label><input id="custName" class="input" placeholder="星海城"/></div>
+          <div class="field"><label>主场颜色</label><input id="custColor" type="color" class="input" value="#2f7a4f" style="height:42px;padding:4px"/></div>
+          <div class="field"><label>所在城市</label><select id="custCity" class="input"></select></div>
+          <div class="field"><label>城市规模影响资金与青训</label><div class="hint mini">大城市：资金+；小城：潜力+</div></div>
+        </div>
+        <button id="createClub" class="btn primary">从中甲起步</button>
+      </div>
+    </div>
+    <div class="row" style="margin-top:10px"><button class="btn" id="backToMenu">返回</button></div>
+  </div>
+</div>
+
+<div id="journey" class="screen hidden">
+  <div class="panel" style="min-width:min(560px,92vw);text-align:center">
+    <div class="title">征程启程！</div>
+    <div class="subtitle" style="margin:12px 0 20px">“我们真正的征程即将拉开帷幕，向着世界足球的最高峰前进吧！”</div>
+    <button id="startGame" class="btn cyan">开始执教</button>
+  </div>
+</div>
+
+
+<!-- Story Mode -->
+<div id="storyHub" class="screen hidden">
+  <div class="panel" style="min-width:min(480px,92vw)">
+    <div class="title" style="text-align:center;font-size:1.5rem">故事模式</div>
+    <div class="subtitle" style="text-align:center;margin:8px 0 14px">勇者闯关 · 计时对决 · 营救公主</div>
+    <div class="col">
+      <button id="storyNew" class="btn cyan">开始冒险</button>
+      <button id="storyContinue" class="btn">继续冒险</button>
+      <button id="storyBackMenu" class="btn">返回主菜单</button>
+    </div>
+  </div>
+</div>
+
+<div id="storyNarration" class="screen hidden">
+  <div class="panel story-panel">
+    <div class="story-chapter" id="storyChapterLabel">第 1 章</div>
+    <div class="title" style="font-size:1.35rem;margin:8px 0" id="storyTitle">-</div>
+    <div class="story-text" id="storyBody">-</div>
+    <div class="row" style="margin-top:16px;justify-content:flex-end">
+      <button id="storyNarrNext" class="btn cyan">继续</button>
+    </div>
+  </div>
+</div>
+
+<div id="storyBattle" class="screen hidden">
+  <div class="story-battle-wrap">
+    <div class="story-top">
+      <span class="pill" id="storyStagePill">关卡 1</span>
+      <span class="pill" id="storyHeroLv">勇者 Lv.1</span>
+      <button class="btn" id="storyFlee" style="margin-left:auto">撤退</button>
+    </div>
+    <div class="story-arena">
+      <div class="story-fighter hero-side">
+        <div class="fighter-name" id="storyHeroName">勇者</div>
+        <div class="hp-bar"><span id="storyHeroHpBar"></span></div>
+        <div class="mini" id="storyHeroHpText">HP 100/100</div>
+        <div class="fighter-art hero-art-badge">⚔️</div>
+      </div>
+      <div class="story-vs">VS</div>
+      <div class="story-fighter enemy-side">
+        <div class="fighter-name" id="storyEnemyName">敌人</div>
+        <div class="hp-bar enemy"><span id="storyEnemyHpBar"></span></div>
+        <div class="mini" id="storyEnemyHpText">HP 50/50</div>
+        <div class="fighter-art" id="storyEnemyArt">👾</div>
+      </div>
+    </div>
+    <div class="panel story-combat-panel">
+      <div class="subtitle">计时对决 · 最接近目标时间者发动攻击</div>
+      <div class="timing-target">目标时间 <b id="storyTargetMs">500</b> ms</div>
+      <div class="timing-track">
+        <div class="timing-needle" id="storyNeedle"></div>
+        <div class="timing-mark" id="storyMark"></div>
+      </div>
+      <div class="row" style="justify-content:center;gap:16px;margin-top:12px">
+        <div class="odds-box"><div class="mini">你的停表</div><b id="storyPlayerStop">—</b></div>
+        <div class="odds-box"><div class="mini">敌方停表</div><b id="storyEnemyStop">—</b></div>
+        <div class="odds-box"><div class="mini">骰子加成</div><b id="storyDiceBonus">—</b></div>
+      </div>
+      <div class="row" style="justify-content:center;margin-top:14px">
+        <button id="storyStartTimer" class="btn cyan">开始计时</button>
+        <button id="storyStopTimer" class="btn primary hidden">停！</button>
+      </div>
+      <div class="log story-log" id="storyLog"></div>
+    </div>
+  </div>
+</div>
+
+<div id="storyLevelUp" class="screen hidden">
+  <div class="panel" style="min-width:min(420px,92vw)">
+    <div class="title" style="font-size:1.35rem">升级！</div>
+    <div class="subtitle" id="storyLvSummary" style="margin:10px 0">勇者变强了</div>
+    <div id="storyStatGain" class="list"></div>
+    <button id="storyLvContinue" class="btn cyan" style="margin-top:14px;width:100%">下一关</button>
+  </div>
+</div>
+
+<div id="storyEnding" class="screen hidden">
+  <div class="panel story-panel" style="text-align:center">
+    <div class="logo" style="font-size:2rem">👑</div>
+    <div class="title" style="margin:12px 0" id="storyEndTitle">公主得救了！</div>
+    <div class="story-text" id="storyEndBody"></div>
+    <div class="row" style="justify-content:center;margin-top:16px">
+      <button id="storyEndMenu" class="btn cyan">返回故事菜单</button>
+      <button id="storyEndMain" class="btn">主菜单</button>
+    </div>
+  </div>
+</div>
+
+<!-- App -->
+<div id="app" class="hidden">
+  <div class="topbar">
+    <div class="group">
+      <span class="pill" id="dateText">2026-03-01</span>
+      <span class="pill" id="nextMatchText">下一轮：-</span>
+      <span class="pill" id="mgrPill">教练：-</span>
+    </div>
+    <div class="group">
+      <span class="badge" id="leagueBadge">-</span>
+      <span class="badge">名次：<b id="rankText">-</b></span>
+      <span class="badge">攻 <b id="atkText">-</b> · 守 <b id="defText">-</b> · 士气 <b id="moraleText">-</b></span>
+      <span class="badge">资金 <span id="moneyText" class="money">0</span></span>
+      <span class="badge">董事会 <b id="boardText">-</b></span>
+      <button class="btn" id="btnSave">保存</button>
+    </div>
+  </div>
+  <div style="flex:1;display:flex;min-height:0">
+    <div class="side">
+      <button class="btn nav-btn" data-nav="calendar">赛程 / 比赛</button>
+      <button class="btn nav-btn" data-nav="inbox">收件箱</button>
+      <button class="btn nav-btn" data-nav="tactics">战术板</button>
+      <button class="btn nav-btn" data-nav="club">阵容 / 角色</button>
+      <button class="btn nav-btn" data-nav="finance">财务</button>
+      <button class="btn nav-btn" data-nav="transfer">转会 / 球探</button>
+      <button class="btn nav-btn" data-nav="league">联赛数据</button>
+      <button class="btn nav-btn" data-nav="career">生涯 / 经理</button>
+      <button class="btn nav-btn" data-nav="hall">殿堂纪录</button>
+      <button class="btn nav-btn" data-nav="settings">设置 / 存档</button>
+    </div>
+    <div class="main">
+      <div id="view-calendar" class="col">
+        <div class="scoreboard">
+          <div>
+            <div class="subtitle">下一场比赛预览</div>
+            <div id="calNextInfo">-</div>
+            <div id="matchPreview" class="preview-odds" style="margin-top:8px"></div>
+          </div>
+          <div class="row">
+            <span class="tag">每9′掷六面骰</span>
+            <span class="tag">战术影响阈值</span>
+          </div>
+          <div class="row">
+            <button class="btn cyan" id="btnPlay">进行比赛</button>
+            <button class="btn" id="btnSimRound">模拟本轮</button>
+          </div>
+        </div>
+        <div class="panel"><div class="subtitle">近期赛程与结果</div><div id="recentResults" class="list"></div></div>
+      </div>
+
+      <div id="view-inbox" class="col hidden">
+        <div class="panel"><div class="subtitle">收件箱 · 报纸头条</div><div id="inboxList" class="list"></div></div>
+      </div>
+
+      <div id="view-tactics" class="col hidden">
+        <div class="tactics-board">
+          <div class="panel">
+            <div class="subtitle">阵型</div>
+            <div class="slot-bar" id="formationBtns"></div>
+            <div class="formation-pitch" id="formPitch" style="margin-top:10px"></div>
+          </div>
+          <div class="panel">
+            <div class="subtitle">战术参数（影响掷骰阈值）</div>
+            <div class="field"><label>心态</label>
+              <select id="tacMentality" class="input"><option value="defend">防守</option><option value="balanced" selected>平衡</option><option value="attack">进攻</option></select>
+            </div>
+            <div class="field"><label>逼抢强度</label>
+              <select id="tacPressing" class="input"><option value="low">低</option><option value="med" selected>中</option><option value="high">高</option></select>
+            </div>
+            <div class="field"><label>横向宽度</label>
+              <select id="tacWidth" class="input"><option value="narrow">紧凑</option><option value="normal" selected>标准</option><option value="wide">拉开</option></select>
+            </div>
+            <div class="hint mini" id="tacHint" style="margin-top:8px">平衡战术：无明显阈值修正</div>
+            <button class="btn primary" id="btnApplyTac" style="margin-top:10px">应用战术</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="view-club" class="col hidden">
+        <div class="grid two">
+          <div class="panel">
+            <div class="subtitle">一线队 · 角色</div>
+            <div class="row" style="margin-bottom:8px">
+              <span class="tag">队长：<b id="captainName">-</b></span>
+              <span class="tag">定位球：<b id="setpieceName">-</b></span>
+            </div>
+            <div class="field" style="margin-bottom:8px"><label>本周训练重点</label>
+              <select id="trainingFocus" class="input">
+                <option value="balanced">均衡</option><option value="attack">进攻</option>
+                <option value="defense">防守</option><option value="morale">士气</option><option value="fitness">体能</option>
+              </select>
+            </div>
+            <table class="table" id="squadTable">
+              <thead><tr><th>首发</th><th>球员</th><th>位</th><th>适</th><th>龄</th><th>攻</th><th>守</th><th>形</th><th>体</th><th>操作</th></tr></thead>
+              <tbody></tbody>
+            </table>
+            <div class="mini hint">阵容 15–20 人 · 首发 5 人（含门将）</div>
+          </div>
+          <div class="panel">
+            <div class="subtitle">青年队 · 年度新人</div>
+            <table class="table" id="youthTable">
+              <thead><tr><th>球员</th><th>位</th><th>龄</th><th>攻</th><th>守</th><th>潜力</th><th>操作</th></tr></thead>
+              <tbody></tbody>
+            </table>
+            <div class="grid three" style="margin-top:12px">
+              <div class="card"><div class="subtitle">设施</div><div class="list" id="facilityList"></div></div>
+              <div class="card"><div class="subtitle">球探 Lv.<b id="scoutLevelText">1</b></div>
+                <button class="btn" id="upgradeScout">升级 ¥300k</button>
+                <div class="mini hint">级别越高，高潜/传奇概率↑</div>
+              </div>
+              <div class="card"><div class="subtitle">青训简报</div><div id="youthBrief" class="mini hint">赛季末将有新人入队</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="view-finance" class="col hidden">
+        <div class="grid three">
+          <div class="panel"><div class="subtitle">现金</div><div class="money" id="finCash" style="font-size:1.4rem">¥0</div></div>
+          <div class="panel"><div class="subtitle">转会预算</div><div id="finTransfer" class="money">¥0</div></div>
+          <div class="panel"><div class="subtitle">工资预算 / 周薪压力</div><div id="finWage">-</div><div class="progress-thin" style="margin-top:6px"><span id="wageBar" style="width:40%"></span></div></div>
+        </div>
+        <div class="grid two" style="margin-top:12px">
+          <div class="panel"><div class="subtitle">收入预测</div><div id="finIncome" class="list"></div></div>
+          <div class="panel"><div class="subtitle">董事会信心</div>
+            <div class="stat"><span>信心</span><div class="bar"><span id="boardBar" style="width:50%"></span></div><b id="boardVal">50</b></div>
+            <div class="mini hint" id="boardHint">成绩与财务共同影响董事会态度</div>
+          </div>
+        </div>
+      </div>
+
+      <div id="view-transfer" class="col hidden">
+        <div class="grid two">
+          <div class="panel">
+            <div class="subtitle">球探推荐（含报告）</div>
+            <table class="table" id="scoutTable"><thead><tr><th>球员</th><th>位</th><th>龄</th><th>攻</th><th>守</th><th>身价</th><th>操作</th></tr></thead><tbody></tbody></table>
+            <div id="scoutReport" class="inbox-item" style="margin-top:10px"><div class="mini">选择「报告」查看球探评语</div></div>
+          </div>
+          <div class="panel">
+            <div class="subtitle">自由球员</div>
+            <table class="table" id="marketTable"><thead><tr><th>球员</th><th>位</th><th>龄</th><th>攻</th><th>守</th><th>薪</th><th>操作</th></tr></thead><tbody></tbody></table>
+          </div>
+        </div>
+        <div class="panel" style="margin-top:12px">
+          <div class="subtitle">关注名单（Shortlist）</div>
+          <div id="shortlistEl" class="list"></div>
+        </div>
+        <div class="panel" style="margin-top:12px">
+          <div class="subtitle">出售球员</div>
+          <table class="table" id="sellTable"><thead><tr><th>球员</th><th>位</th><th>龄</th><th>攻</th><th>守</th><th>估值</th><th>操作</th></tr></thead><tbody></tbody></table>
+        </div>
+      </div>
+
+      <div id="view-league" class="col hidden">
+        <div class="grid two">
+          <div class="panel">
+            <div class="row-between"><div class="subtitle">联赛积分榜</div><span class="tag">末两位降级 · 中甲前二升级</span></div>
+            <table class="table" id="standingTable"><thead><tr><th>#</th><th>球队</th><th>赛</th><th>胜</th><th>平</th><th>负</th><th>进</th><th>失</th><th>分</th></tr></thead><tbody></tbody></table>
+          </div>
+          <div class="panel"><div class="subtitle">本轮对阵</div><div id="roundMatches" class="list"></div></div>
+        </div>
+      </div>
+
+      <div id="view-career" class="col hidden">
+        <div class="grid two">
+          <div class="panel">
+            <div class="subtitle">经理档案</div>
+            <div id="careerProfile" class="list"></div>
+          </div>
+          <div class="panel">
+            <div class="subtitle">执教履历</div>
+            <div id="careerHistory" class="list"></div>
+          </div>
+        </div>
+        <div class="panel" style="margin-top:12px">
+          <div class="row-between">
+            <div class="subtitle">全球排行榜（Firebase）</div>
+            <button class="btn" id="btnSubmitCloud">提交本生涯摘要</button>
+          </div>
+          <div id="cloudStatus" class="mini hint">未配置 Firebase 时仅本地纪录可用</div>
+          <div id="cloudLB" class="list" style="margin-top:8px"></div>
+        </div>
+      </div>
+
+      <div id="view-hall" class="col hidden">
+        <div class="grid two">
+          <div class="panel"><div class="subtitle">赛季殿堂</div><div id="hallList" class="list"></div></div>
+          <div class="panel"><div class="subtitle">设备纪录板</div><div id="recordsBoard" class="list"></div></div>
+        </div>
+      </div>
+
+      <div id="view-settings" class="col hidden">
+        <div class="panel">
+          <div class="subtitle">游戏设置</div>
+          <div class="field"><label><input type="checkbox" id="homeAdvToggle" checked/> 主场优势（5 或 6 进球）</label></div>
+          <div class="field"><label><input type="checkbox" id="fastMatchToggle"/> 快速比赛</label></div>
+          <div class="field"><label><input type="checkbox" id="autoSaveToggle" checked/> 每轮自动保存</label></div>
+          <div class="row" style="margin-top:10px">
+            <button class="btn primary" id="btnSave2">手动保存</button>
+            <button class="btn" id="btnExport">导出 JSON</button>
+            <button class="btn" id="btnImport">导入 JSON</button>
+            <input type="file" id="importFile" accept="application/json,.json" class="hidden"/>
+            <button class="btn warn" id="btnReturnMenu">回主菜单</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="view-match" class="col hidden">
+        <div class="scoreboard">
+          <div class="row" style="gap:16px">
+            <div><span id="homeName" class="badge"></span> <span class="tag">主</span></div>
+            <div class="score" id="scoreText">0 - 0</div>
+            <div><span id="awayName" class="badge"></span> <span class="tag">客</span></div>
+          </div>
+          <div class="row"><span class="tag">时间 <span id="timeText">0'</span></span><span class="tag" id="halfText">上半场</span></div>
+          <div class="row">
+            <button class="btn cyan" id="btnRoll">掷骰子</button>
+            <button class="btn" id="btnAuto">自动</button>
+            <button class="btn" id="btnSkip">跳过整场</button>
+          </div>
+        </div>
+        <div class="pitch">
+          <div class="half"></div>
+          <div class="box" style="left:0;top:120px;bottom:120px;width:140px"></div>
+          <div class="box" style="right:0;top:120px;bottom:120px;width:140px"></div>
+          <div class="team-half left" style="display:flex;flex-wrap:wrap;align-content:flex-end;padding:10px" id="homeDiceWrap"></div>
+          <div class="team-half right" style="display:flex;flex-wrap:wrap;align-content:flex-start;justify-content:flex-end;padding:10px" id="awayDiceWrap"></div>
+        </div>
+        <div class="grid two" style="margin-top:10px">
+          <div class="panel"><div class="subtitle">比赛事件</div><div id="matchLog" class="log"></div></div>
+          <div class="panel"><div class="subtitle">属性与加成</div><div id="modPanel" class="list"></div></div>
+        </div>
+        <div class="footer-actions row"><button class="btn" id="btnEndMatch" disabled>结束比赛</button></div>
+      </div>
+
+      <div id="view-summary" class="col hidden">
+        <div class="panel">
+          <div class="title">比赛结算</div>
+          <div class="row" style="gap:18px;margin:12px 0">
+            <span class="badge" id="sumNames">-</span>
+            <span class="badge">比分 <b id="sumScore">-</b></span>
+            <span class="badge">结果 <b id="sumResult">-</b></span>
+          </div>
+          <div class="grid three">
+            <div class="card"><div class="subtitle">资金</div><div id="sumMoney" class="money">+0</div></div>
+            <div class="card"><div class="subtitle">士气</div><div id="sumMorale">+0</div></div>
+            <div class="card"><div class="subtitle">头条</div><div id="sumOther" class="hint">-</div></div>
+          </div>
+        </div>
+        <div class="panel"><div class="subtitle">本轮其他比赛</div><div id="otherResults" class="list"></div></div>
+        <div class="row"><button class="btn cyan" id="btnSummaryOK">确认返回</button></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast hidden"></div>
+
+<script src="firebase-config.js"></script>
+<!-- Firebase compat CDN: only used when FIREBASE_CONFIG.projectId is set -->
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<script src="game.js"></script>
+<script src="story.js"></script>
+</body>
+</html>
