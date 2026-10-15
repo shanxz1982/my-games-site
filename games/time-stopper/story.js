@@ -2,9 +2,16 @@
 (function () {
 "use strict";
 
-const STORY_KEY = "timeStopperStory_v1";
+const STORY_KEY = "timeStopperStory_v2";
+const STORY_KEY_OLD = "timeStopperStory_v1";
 const $ = (s, root) => (root || document).querySelector(s);
 const $$ = (s, root) => Array.from((root || document).querySelectorAll(s));
+
+const DIFFICULTY = {
+  easy:   { id: "easy",   label: "简单", noiseMin: 90, noiseMax: 320, hpMul: 0.85, atkMul: 0.9 },
+  normal: { id: "normal", label: "普通", noiseMin: 50, noiseMax: 200, hpMul: 1,    atkMul: 1 },
+  hard:   { id: "hard",   label: "困难", noiseMin: 20, noiseMax: 100, hpMul: 1.12, atkMul: 1.08 }
+};
 
 const ITEM_DEFS = {
   heal:   { id: "heal",   name: "回复药",   emoji: "🧪", desc: "恢复 40 HP" },
@@ -12,12 +19,11 @@ const ITEM_DEFS = {
   double: { id: "double", name: "倍击符",   emoji: "💥", desc: "下次攻击双倍伤害" },
   reroll: { id: "reroll", name: "重停表",   emoji: "🔁", desc: "本回合可重停一次" }
 };
-const LOOT_POOL = ["heal", "shield", "double", "reroll"];
 
 const CHAPTERS = [
   {
     id: 1, title: "边陲的烽火",
-    narrate: "王国边陲传来异变。年轻的勇者接过锈迹斑斑的剑，踏上营救被魔王掳走的公主之路。\n第一关：密林入口，一群哥布林挡路。\n——用 TIME STOPPER 的直觉，停在目标时间最近的那一帧。",
+    narrate: "王国边陲传来异变。年轻的勇者接过锈迹斑斑的剑，踏上营救被魔王掳走的公主之路。\n第一关：密林入口，一群哥布林挡路。\n——用 TIME STOPPER 的直觉，停在自己目标时间最近的那一帧。",
     enemy: { name: "哥布林斥候", emoji: "👺", hp: 42, atk: 9, kind: "mob" },
     targetMs: 500
   },
@@ -64,20 +70,38 @@ const CHAPTERS = [
 const Story = {
   active: false,
   chapterIndex: 0,
+  difficulty: "normal",
   hero: null,
   enemy: null,
   bag: [],
   buffs: { shield: false, double: false, rerollReady: false },
   phase: "hub",
   timing: {
-    running: false, start: 0, raf: 0, duration: 1200,
-    playerMs: null, enemyMs: null, targetMs: 500
+    active: false,
+    playerRunning: false,
+    start: 0,
+    raf: 0,
+    duration: 1200,
+    playerMs: null,
+    enemyMs: null,
+    playerTargetMs: 500,
+    enemyTargetMs: 500,
+    enemyStopMs: null,
+    playerStopped: false,
+    enemyStopped: false,
+    awaitingRerollConfirm: false
   },
   rewardTiming: {
     running: false, start: 0, raf: 0, duration: 1200, targetMs: 500
   },
   dmgFloatId: 0
 };
+
+function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
+
+function diffDef() {
+  return DIFFICULTY[Story.difficulty] || DIFFICULTY.normal;
+}
 
 function defaultHero() {
   return { name: "勇者", level: 1, hp: 100, maxHp: 100, atk: 14, def: 4 };
@@ -89,29 +113,48 @@ function saveStory() {
       chapterIndex: Story.chapterIndex,
       hero: Story.hero,
       bag: Story.bag,
+      difficulty: Story.difficulty,
       savedAt: Date.now()
     }));
+    try { localStorage.removeItem(STORY_KEY_OLD); } catch (e2) {}
   } catch (e) {}
+}
+
+function normalizeDifficulty(v) {
+  return DIFFICULTY[v] ? v : "normal";
 }
 
 function loadStory() {
   try {
-    const raw = localStorage.getItem(STORY_KEY);
+    let raw = localStorage.getItem(STORY_KEY);
+    let migrated = false;
+    if (!raw) {
+      raw = localStorage.getItem(STORY_KEY_OLD);
+      migrated = !!raw;
+    }
     if (!raw) return false;
     const d = JSON.parse(raw);
     Story.chapterIndex = d.chapterIndex | 0;
     Story.hero = d.hero || defaultHero();
     Story.bag = Array.isArray(d.bag) ? d.bag : [];
+    Story.difficulty = normalizeDifficulty(d.difficulty);
+    if (migrated) {
+      try { localStorage.removeItem(STORY_KEY_OLD); } catch (e2) {}
+      saveStory();
+    }
     return true;
   } catch (e) { return false; }
 }
 
 function clearStorySave() {
-  localStorage.removeItem(STORY_KEY);
+  try { localStorage.removeItem(STORY_KEY); } catch (e) {}
+  try { localStorage.removeItem(STORY_KEY_OLD); } catch (e) {}
 }
 
 function hasSave() {
-  try { return !!localStorage.getItem(STORY_KEY); } catch (e) { return false; }
+  try {
+    return !!(localStorage.getItem(STORY_KEY) || localStorage.getItem(STORY_KEY_OLD));
+  } catch (e) { return false; }
 }
 
 function showStoryOnly(id) {
@@ -169,10 +212,20 @@ function renderBag() {
     btn.className = "story-item-btn";
     btn.innerHTML = '<span class="item-emoji">' + def.emoji + "</span><span>" + def.name + "</span>";
     btn.title = def.desc;
-    btn.disabled = Story.phase !== "battle" || Story.timing.running;
+    btn.disabled = Story.phase !== "battle" || Story.timing.active || Story.timing.awaitingRerollConfirm;
     btn.onclick = () => useItem(idx);
     box.appendChild(btn);
   });
+}
+
+function setDifficulty(id, persist) {
+  Story.difficulty = normalizeDifficulty(id);
+  $$("#storyDiffRow .story-diff-btn").forEach((btn) => {
+    btn.classList.toggle("active", btn.getAttribute("data-diff") === Story.difficulty);
+  });
+  const hint = $("#storyDiffHint");
+  if (hint) hint.textContent = "当前难度：" + diffDef().label;
+  if (persist && hasSave() && Story.hero) saveStory();
 }
 
 function renderHeroStats() {
@@ -186,7 +239,8 @@ function renderHeroStats() {
       "<div class=\"story-stat-chip\">ATK " + h.atk + "</div>" +
       "<div class=\"story-stat-chip\">DEF " + h.def + "</div>" +
       "<div class=\"story-stat-chip\">背包 " + Story.bag.length + "</div>" +
-      "<div class=\"story-stat-chip\">章节 " + Math.min(Story.chapterIndex + 1, CHAPTERS.length) + "/" + CHAPTERS.length + "</div>";
+      "<div class=\"story-stat-chip\">章节 " + Math.min(Story.chapterIndex + 1, CHAPTERS.length) + "/" + CHAPTERS.length + "</div>" +
+      "<div class=\"story-stat-chip\">难度 " + diffDef().label + "</div>";
   }
   const battleBag = $("#storyBattleBagHint");
   if (battleBag) battleBag.textContent = "背包 " + Story.bag.length + " 件";
@@ -200,14 +254,15 @@ function openHub() {
   if (!Story.hero) {
     if (!loadStory()) Story.hero = defaultHero();
   }
+  setDifficulty(Story.difficulty, false);
   renderHeroStats();
   const cont = $("#storyContinue");
   if (cont) cont.disabled = !hasSave();
   const progress = $("#storyHubProgress");
   if (progress) {
     progress.textContent = hasSave()
-      ? ("存档：第 " + Math.min(Story.chapterIndex + 1, CHAPTERS.length) + " 章 · Lv." + (Story.hero && Story.hero.level))
-      : "尚无存档 — 开始新冒险吧";
+      ? ("存档：第 " + Math.min(Story.chapterIndex + 1, CHAPTERS.length) + " 章 · Lv." + (Story.hero && Story.hero.level) + " · " + diffDef().label)
+      : "尚无存档 — 选择难度后开始新冒险吧";
   }
 }
 
@@ -222,7 +277,6 @@ function startNewAdventure() {
 }
 
 function showNarration() {
-  // skip hidden chapter unless previous was cleared as final (chapterIndex points to it)
   let ch = CHAPTERS[Story.chapterIndex];
   if (!ch) { showEnding(true); return; }
   Story.phase = "narrate";
@@ -236,44 +290,117 @@ function showNarration() {
   $("#storyBody").textContent = ch.narrate;
 }
 
+function rollPlayerTarget(ch) {
+  let t = ch.targetMs;
+  if (Story.difficulty === "hard") {
+    t += Math.round((Math.random() * 40) - 20);
+  }
+  return clamp(t, 280, Story.timing.duration - 280);
+}
+
+function rollEnemyTarget(ch) {
+  if (ch.enemyTargetMs != null && Number.isFinite(ch.enemyTargetMs)) {
+    return clamp(Math.round(ch.enemyTargetMs), 280, 920);
+  }
+  const base = ch.targetMs;
+  let offset = Math.round(Math.random() * 560 - 280);
+  if (offset === 0) offset = Math.random() < 0.5 ? -40 : 40;
+  return clamp(base + offset, 280, 920);
+}
+
+function rollEnemyNoise() {
+  const d = diffDef();
+  let minN = d.noiseMin;
+  let maxN = d.noiseMax;
+  if (Story.difficulty === "hard") {
+    const reduce = Math.min(Story.chapterIndex * 5, 40);
+    maxN = Math.max(minN + 10, maxN - reduce);
+  }
+  const mag = minN + Math.random() * (maxN - minN);
+  const sign = Math.random() < 0.5 ? -1 : 1;
+  return Math.round(sign * mag);
+}
+
+function updateTargetUI() {
+  const p = Story.timing.playerTargetMs;
+  const e = Story.timing.enemyTargetMs;
+  const dur = Story.timing.duration;
+  const pEl = $("#storyPlayerTargetMs");
+  const eEl = $("#storyEnemyTargetMs");
+  if (pEl) pEl.textContent = String(p);
+  if (eEl) eEl.textContent = String(e);
+  const mark = $("#storyMark");
+  const eMark = $("#storyEnemyMark");
+  if (mark) mark.style.left = (p / dur * 100) + "%";
+  if (eMark) eMark.style.left = (e / dur * 100) + "%";
+}
+
+function resetNeedles() {
+  const n = $("#storyNeedle");
+  const en = $("#storyEnemyNeedle");
+  if (n) n.style.left = "0%";
+  if (en) en.style.left = "0%";
+}
+
 function beginBattle() {
   const ch = CHAPTERS[Story.chapterIndex];
   if (!ch) return;
   Story.phase = "battle";
   Story.buffs = { shield: false, double: false, rerollReady: false };
+  const d = diffDef();
+  const maxHp = Math.max(1, Math.round(ch.enemy.hp * d.hpMul));
+  const atk = Math.max(1, Math.round(ch.enemy.atk * d.atkMul));
   Story.enemy = {
     name: ch.enemy.name,
     emoji: ch.enemy.emoji,
-    hp: ch.enemy.hp,
-    maxHp: ch.enemy.hp,
-    atk: ch.enemy.atk,
+    hp: maxHp,
+    maxHp: maxHp,
+    atk: atk,
     kind: ch.enemy.kind
   };
-  Story.timing.targetMs = ch.targetMs;
+  cancelTimingAnim();
+  Story.timing.playerTargetMs = rollPlayerTarget(ch);
+  Story.timing.enemyTargetMs = rollEnemyTarget(ch);
   Story.timing.playerMs = null;
   Story.timing.enemyMs = null;
-  Story.timing.running = false;
+  Story.timing.enemyStopMs = null;
+  Story.timing.playerStopped = false;
+  Story.timing.enemyStopped = false;
+  Story.timing.active = false;
+  Story.timing.playerRunning = false;
+  Story.timing.awaitingRerollConfirm = false;
   showStoryOnly("storyBattle");
-  $("#storyStagePill").textContent = "关卡 " + ch.id + (ch.midBoss || ch.finalBoss ? " · BOSS" : "");
+  $("#storyStagePill").textContent =
+    "关卡 " + ch.id +
+    (ch.midBoss || ch.finalBoss ? " · BOSS" : "") +
+    " · " + d.label;
   $("#storyHeroLv").textContent = Story.hero.name + " Lv." + Story.hero.level;
   $("#storyHeroName").textContent = Story.hero.name;
   $("#storyEnemyName").textContent = Story.enemy.name;
   $("#storyEnemyArt").textContent = Story.enemy.emoji;
   setHpBar($("#storyHeroHpBar"), $("#storyHeroHpText"), Story.hero.hp, Story.hero.maxHp);
   setHpBar($("#storyEnemyHpBar"), $("#storyEnemyHpText"), Story.enemy.hp, Story.enemy.maxHp);
-  $("#storyTargetMs").textContent = String(ch.targetMs);
-  $("#storyMark").style.left = (ch.targetMs / Story.timing.duration * 100) + "%";
+  updateTargetUI();
+  resetNeedles();
   $("#storyPlayerStop").textContent = "—";
   $("#storyEnemyStop").textContent = "—";
+  const cmp = $("#storyTargetCompare");
+  if (cmp) cmp.textContent = "—";
   $("#storyBuffFlags").textContent = "无增益";
   $("#storyLog").innerHTML = "";
   $("#storyStartTimer").classList.remove("hidden");
   $("#storyStopTimer").classList.add("hidden");
   $("#storyRerollBtn").classList.add("hidden");
+  const confirmBtn = $("#storyConfirmStop");
+  if (confirmBtn) confirmBtn.classList.add("hidden");
   renderBag();
   renderHeroStats();
   updateBuffFlags();
-  log((ch.midBoss || ch.finalBoss ? "⚠ 首领战！ " : "") + "双方朝 " + ch.targetMs + " ms 停表，最接近者发动攻击。");
+  log(
+    (ch.midBoss || ch.finalBoss ? "⚠ 首领战！ " : "") +
+    "你的目标 " + Story.timing.playerTargetMs + " ms · 敌方目标 " + Story.timing.enemyTargetMs +
+    " ms — 各自逼近自己的目标，误差差越大伤害越高。（" + d.label + "）"
+  );
 }
 
 function updateBuffFlags() {
@@ -285,11 +412,11 @@ function updateBuffFlags() {
   const el = $("#storyBuffFlags");
   if (el) el.textContent = text;
   const el2 = $("#storyBuffFlags2");
-  if (el2) el2.textContent = text;
+  if (el2) el2.textContent = "增益：" + text;
 }
 
 function useItem(idx) {
-  if (Story.phase !== "battle" || Story.timing.running) return;
+  if (Story.phase !== "battle" || Story.timing.active || Story.timing.awaitingRerollConfirm) return;
   const itemId = Story.bag[idx];
   const def = ITEM_DEFS[itemId];
   if (!def) return;
@@ -317,46 +444,133 @@ function useItem(idx) {
   renderHeroStats();
 }
 
-function startTimer() {
-  if (Story.timing.running || Story.phase !== "battle") return;
-  Story.timing.running = true;
+function cancelTimingAnim() {
+  if (Story.timing.raf) cancelAnimationFrame(Story.timing.raf);
+  Story.timing.raf = 0;
+}
+
+function tryMaybeCommit() {
+  if (Story.timing.awaitingRerollConfirm) return;
+  if (!Story.timing.playerStopped || !Story.timing.enemyStopped) return;
+  cancelTimingAnim();
+  Story.timing.active = false;
+  Story.timing.playerRunning = false;
+  commitTurn();
+}
+
+function onEnemyAutoStop() {
+  if (Story.timing.enemyStopped) return;
+  Story.timing.enemyStopped = true;
+  Story.timing.enemyMs = Story.timing.enemyStopMs;
+  const en = $("#storyEnemyNeedle");
+  if (en) en.style.left = (Story.timing.enemyMs / Story.timing.duration * 100) + "%";
+  $("#storyEnemyStop").textContent = Story.timing.enemyMs + " ms";
+  if (!Story.timing.playerStopped) {
+    log("敌方已停表 " + Story.timing.enemyMs + " ms，等待你停表…");
+  }
+  tryMaybeCommit();
+}
+
+function startTimer(fromReroll) {
+  if (Story.phase !== "battle") return;
+  if (Story.timing.playerRunning) return;
+  if (Story.timing.active && !fromReroll && !Story.timing.awaitingRerollConfirm) return;
+  if (Story.timing.awaitingRerollConfirm && !fromReroll) return;
+
+  const duration = Story.timing.duration;
+  const needle = $("#storyNeedle");
+  const enemyNeedle = $("#storyEnemyNeedle");
+
+  if (!fromReroll) {
+    cancelTimingAnim();
+    Story.timing.playerMs = null;
+    Story.timing.enemyMs = null;
+    Story.timing.playerStopped = false;
+    Story.timing.enemyStopped = false;
+    Story.timing.awaitingRerollConfirm = false;
+    const noise = rollEnemyNoise();
+    Story.timing.enemyStopMs = Math.round(clamp(
+      Story.timing.enemyTargetMs + noise,
+      40,
+      duration - 40
+    ));
+    resetNeedles();
+    $("#storyPlayerStop").textContent = "—";
+    $("#storyEnemyStop").textContent = "—";
+    const cmp = $("#storyTargetCompare");
+    if (cmp) cmp.textContent = "—";
+  } else {
+    Story.timing.playerMs = null;
+    Story.timing.playerStopped = false;
+    Story.timing.awaitingRerollConfirm = false;
+    if (needle) needle.style.left = "0%";
+  }
+
+  Story.timing.active = true;
+  Story.timing.playerRunning = true;
   Story.timing.start = performance.now();
-  Story.timing.playerMs = null;
+
   $("#storyStartTimer").classList.add("hidden");
   $("#storyStopTimer").classList.remove("hidden");
   $("#storyRerollBtn").classList.add("hidden");
+  const confirmBtn = $("#storyConfirmStop");
+  if (confirmBtn) confirmBtn.classList.add("hidden");
   renderBag();
-  const needle = $("#storyNeedle");
-  const duration = Story.timing.duration;
+
   const tick = (now) => {
-    if (!Story.timing.running) return;
-    const elapsed = (now - Story.timing.start) % duration;
-    if (needle) needle.style.left = (elapsed / duration * 100) + "%";
-    Story.timing.raf = requestAnimationFrame(tick);
+    if (!Story.timing.active && !Story.timing.playerRunning) return;
+    const raw = now - Story.timing.start;
+    const elapsed = raw % duration;
+
+    if (Story.timing.playerRunning && needle) {
+      needle.style.left = (elapsed / duration * 100) + "%";
+    }
+
+    if (!Story.timing.enemyStopped) {
+      if (raw >= Story.timing.enemyStopMs) {
+        onEnemyAutoStop();
+      } else if (enemyNeedle) {
+        const ePos = Math.min(raw, Story.timing.enemyStopMs);
+        enemyNeedle.style.left = (ePos / duration * 100) + "%";
+      }
+    }
+
+    if (Story.timing.playerRunning || !Story.timing.enemyStopped) {
+      Story.timing.raf = requestAnimationFrame(tick);
+    }
   };
   Story.timing.raf = requestAnimationFrame(tick);
 }
 
-function stopTimer(fromReroll) {
-  if (!Story.timing.running) return;
-  Story.timing.running = false;
-  cancelAnimationFrame(Story.timing.raf);
-  const elapsed = (performance.now() - Story.timing.start) % Story.timing.duration;
-  Story.timing.playerMs = Math.round(elapsed);
+function stopTimer(fromRerollConfirmPath) {
+  if (!Story.timing.playerRunning) return;
+  Story.timing.playerRunning = false;
+  const elapsed = Math.round((performance.now() - Story.timing.start) % Story.timing.duration);
+  Story.timing.playerMs = elapsed;
+  Story.timing.playerStopped = true;
+  const needle = $("#storyNeedle");
+  if (needle) needle.style.left = (elapsed / Story.timing.duration * 100) + "%";
   $("#storyPlayerStop").textContent = Story.timing.playerMs + " ms";
   $("#storyStopTimer").classList.add("hidden");
 
-  if (!fromReroll && Story.buffs.rerollReady) {
+  if (!fromRerollConfirmPath && Story.buffs.rerollReady) {
+    Story.timing.awaitingRerollConfirm = true;
     $("#storyRerollBtn").classList.remove("hidden");
     $("#storyStartTimer").classList.add("hidden");
-    // still compute enemy preview? wait for confirm or reroll
-    // show enemy only after commit
     log("已停表 " + Story.timing.playerMs + " ms。可用「重停」或确认结算。");
     const confirmBtn = $("#storyConfirmStop");
     if (confirmBtn) confirmBtn.classList.remove("hidden");
+    if (Story.timing.enemyStopped) {
+      cancelTimingAnim();
+    }
+    renderBag();
     return;
   }
-  commitTurn();
+
+  if (Story.timing.enemyStopped) {
+    cancelTimingAnim();
+  }
+  tryMaybeCommit();
 }
 
 function consumeReroll() {
@@ -366,8 +580,11 @@ function consumeReroll() {
   $("#storyRerollBtn").classList.add("hidden");
   const confirmBtn = $("#storyConfirmStop");
   if (confirmBtn) confirmBtn.classList.add("hidden");
-  log("重停表！重新计时……");
-  startTimer();
+  Story.timing.awaitingRerollConfirm = false;
+  log("重停表！重新计时（敌方停表保留）……");
+  cancelTimingAnim();
+  Story.timing.active = false;
+  startTimer(true);
 }
 
 function confirmStopAfterRerollOption() {
@@ -375,26 +592,42 @@ function confirmStopAfterRerollOption() {
   if (confirmBtn) confirmBtn.classList.add("hidden");
   $("#storyRerollBtn").classList.add("hidden");
   Story.buffs.rerollReady = false;
+  Story.timing.awaitingRerollConfirm = false;
   updateBuffFlags();
-  commitTurn();
+  if (!Story.timing.playerStopped) return;
+  tryMaybeCommit();
 }
 
-function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
-
 function commitTurn() {
-  const target = Story.timing.targetMs;
-  const skill = 35 + Story.chapterIndex * 9;
-  const noise = (Math.random() - 0.5) * (190 - Math.min(130, skill));
-  const enemyMs = Math.round(clamp(target + noise, 30, Story.timing.duration - 30));
-  Story.timing.enemyMs = enemyMs;
-  $("#storyEnemyStop").textContent = enemyMs + " ms";
+  const pTarget = Story.timing.playerTargetMs;
+  const eTarget = Story.timing.enemyTargetMs;
+  const playerMs = Story.timing.playerMs;
+  const enemyMs = Story.timing.enemyMs;
 
-  const pDist = Math.abs(Story.timing.playerMs - target);
-  const eDist = Math.abs(enemyMs - target);
-  log("你 " + Story.timing.playerMs + "ms（差 " + pDist + "）· 敌 " + enemyMs + "ms（差 " + eDist + "）");
+  const pDist = Math.abs(playerMs - pTarget);
+  const eDist = Math.abs(enemyMs - eTarget);
+  const delta = Math.max(1, Math.round(Math.abs(pDist - eDist)));
 
-  if (pDist <= eDist) {
-    let dmg = Math.max(1, Story.hero.atk - Math.floor(Story.enemy.atk / 10) + Math.floor(Math.random() * 4));
+  const cmp = $("#storyTargetCompare");
+  if (cmp) cmp.textContent = "你差 " + pDist + " · 敌差 " + eDist;
+
+  log(
+    "你停 " + playerMs + "ms / 目标 " + pTarget + "ms（差 " + pDist + "）· " +
+    "敌停 " + enemyMs + "ms / 目标 " + eTarget + "ms（差 " + eDist + "）"
+  );
+
+  // Tie: no damage / skip turn
+  if (pDist === eDist) {
+    log("势均力敌（误差相同），本回合无人受伤。");
+    updateBuffFlags();
+    scheduleNextTurn();
+    return;
+  }
+
+  const playerAttacks = pDist < eDist;
+
+  if (playerAttacks) {
+    let dmg = delta;
     const crit = pDist <= 28;
     if (crit) dmg += 8;
     if (Story.buffs.double) {
@@ -405,9 +638,13 @@ function commitTurn() {
     Story.enemy.hp -= dmg;
     setHpBar($("#storyEnemyHpBar"), $("#storyEnemyHpText"), Story.enemy.hp, Story.enemy.maxHp);
     spawnDmgNumber("enemy", dmg, crit ? "crit" : "hit");
-    log("你发动攻击！造成 " + dmg + " 伤害" + (crit ? "（精准暴击！）" : ""), "story-win");
+    log(
+      "你发动攻击！误差差 " + Math.abs(pDist - eDist) + " → 造成 " + dmg + " 伤害" +
+      (crit ? "（精准暴击！）" : ""),
+      "story-win"
+    );
   } else {
-    let dmg = Math.max(1, Story.enemy.atk - Story.hero.def + Math.floor(Math.random() * 5));
+    let dmg = delta;
     if (Story.buffs.shield) {
       dmg = Math.max(1, Math.floor(dmg / 2));
       Story.buffs.shield = false;
@@ -416,7 +653,10 @@ function commitTurn() {
     Story.hero.hp -= dmg;
     setHpBar($("#storyHeroHpBar"), $("#storyHeroHpText"), Story.hero.hp, Story.hero.maxHp);
     spawnDmgNumber("hero", dmg, "hit");
-    log(Story.enemy.name + " 抢先出手！你受到 " + dmg + " 伤害", "story-lose");
+    log(
+      Story.enemy.name + " 抢先出手！误差差 " + Math.abs(pDist - eDist) + " → 你受到 " + dmg + " 伤害",
+      "story-lose"
+    );
   }
   updateBuffFlags();
 
@@ -431,10 +671,31 @@ function commitTurn() {
     setTimeout(() => showEnding(false), 750);
     return;
   }
+  scheduleNextTurn();
+}
+
+function scheduleNextTurn() {
   setTimeout(() => {
+    const ch = CHAPTERS[Story.chapterIndex];
+    Story.timing.playerTargetMs = rollPlayerTarget(ch);
+    Story.timing.enemyTargetMs = rollEnemyTarget(ch);
+    Story.timing.playerMs = null;
+    Story.timing.enemyMs = null;
+    Story.timing.enemyStopMs = null;
+    Story.timing.playerStopped = false;
+    Story.timing.enemyStopped = false;
+    Story.timing.active = false;
+    Story.timing.playerRunning = false;
+    Story.timing.awaitingRerollConfirm = false;
+    updateTargetUI();
+    resetNeedles();
+    $("#storyPlayerStop").textContent = "—";
+    $("#storyEnemyStop").textContent = "—";
+    const cmp2 = $("#storyTargetCompare");
+    if (cmp2) cmp2.textContent = "—";
     $("#storyStartTimer").classList.remove("hidden");
     renderBag();
-    log("—— 下一回合 ——");
+    log("—— 下一回合 · 你 " + Story.timing.playerTargetMs + "ms / 敌 " + Story.timing.enemyTargetMs + "ms ——");
   }, 420);
 }
 
@@ -450,7 +711,8 @@ function openReward(afterFinal) {
   $("#storyRewardSummary").textContent =
     Story.hero.name + " Lv." + Story.hero.level +
     " · HP " + Story.hero.hp + "/" + Story.hero.maxHp +
-    " · ATK " + Story.hero.atk + " · DEF " + Story.hero.def;
+    " · ATK " + Story.hero.atk + " · DEF " + Story.hero.def +
+    " · " + diffDef().label;
   $("#storyRewardResult").textContent = "—";
   $("#storyRewardDetail").classList.add("hidden");
   $("#storyLootStartBtn").classList.remove("hidden");
@@ -460,9 +722,7 @@ function openReward(afterFinal) {
   $("#storyRewardContinue").classList.add("hidden");
   Story._afterFinalReward = !!afterFinal;
   Story._rewardLocked = false;
-  // heal a bit between stages
   Story.hero.hp = Math.min(Story.hero.maxHp, Story.hero.hp + 15);
-  // fresh target for loot timing challenge
   const targets = [420, 480, 500, 550, 600, 666, 720];
   Story.rewardTiming.targetMs = targets[Story.chapterIndex % targets.length];
   Story.rewardTiming.running = false;
@@ -482,7 +742,6 @@ function lockRewardChoices() {
 }
 
 function itemFromAccuracy(diff) {
-  // closer = better loot; always earn an item for completing the stop
   if (diff <= 25) return "double";
   if (diff <= 50) return "reroll";
   if (diff <= 90) return "shield";
@@ -565,7 +824,8 @@ function showEnding(victory) {
   if (victory) {
     $("#storyEndTitle").textContent = "公主得救了！";
     $("#storyEndBody").textContent =
-      "魔王倒下，水晶碎裂。公主握住勇者的手：\n「计时与勇气，缺一不可。王国将铭记这一天。」\n\n—— 故事模式通关 ——\n最终等级 Lv." +
+      "魔王倒下，水晶碎裂。公主握住勇者的手：\n「计时与勇气，缺一不可。王国将铭记这一天。」\n\n—— 故事模式通关（" +
+      diffDef().label + "）——\n最终等级 Lv." +
       (Story.hero && Story.hero.level) +
       " · 攻击 " + (Story.hero && Story.hero.atk) +
       " · 防御 " + (Story.hero && Story.hero.def);
@@ -576,7 +836,8 @@ function showEnding(victory) {
   } else {
     $("#storyEndTitle").textContent = "冒险中断…";
     $("#storyEndBody").textContent =
-      "黑暗吞没了意识。但传说不会结束——从故事菜单再次启程吧。\n（进度已保存到战败前的关卡）";
+      "黑暗吞没了意识。但传说不会结束——从故事菜单再次启程吧。\n（进度已保存到战败前的关卡 · " +
+      diffDef().label + "）";
     if (Story.hero) {
       Story.hero.hp = Math.max(1, Math.floor(Story.hero.maxHp * 0.55));
       saveStory();
@@ -587,8 +848,9 @@ function showEnding(victory) {
 function closeStoryToMenu() {
   Story.active = false;
   Story.phase = "hub";
-  if (Story.timing.raf) cancelAnimationFrame(Story.timing.raf);
-  Story.timing.running = false;
+  cancelTimingAnim();
+  Story.timing.active = false;
+  Story.timing.playerRunning = false;
   if (Story.rewardTiming.raf) cancelAnimationFrame(Story.rewardTiming.raf);
   Story.rewardTiming.running = false;
   openStoryRoot(false);
@@ -601,7 +863,6 @@ function closeStoryToMenu() {
 }
 
 function enterStoryMode() {
-  // leave other screens
   const start = document.getElementById("startScreen");
   const menu = document.getElementById("menuScreen");
   const game = document.getElementById("gameScreen");
@@ -622,19 +883,26 @@ function bindStory() {
       if (e.key === "Enter" || e.key === " ") { e.preventDefault(); enterStoryMode(); }
     });
   }
+  $$("#storyDiffRow .story-diff-btn").forEach((btn) => {
+    btn.onclick = () => setDifficulty(btn.getAttribute("data-diff"), true);
+  });
   $("#storyNew") && ($("#storyNew").onclick = () => startNewAdventure());
   $("#storyContinue") && ($("#storyContinue").onclick = () => {
     if (!loadStory()) { alert("没有故事进度，请开始新冒险。"); return; }
+    setDifficulty(Story.difficulty, false);
     showNarration();
   });
   $("#storyBackMenu") && ($("#storyBackMenu").onclick = () => closeStoryToMenu());
   $("#storyNarrNext") && ($("#storyNarrNext").onclick = () => beginBattle());
-  $("#storyStartTimer") && ($("#storyStartTimer").onclick = () => startTimer());
+  $("#storyStartTimer") && ($("#storyStartTimer").onclick = () => startTimer(false));
   $("#storyStopTimer") && ($("#storyStopTimer").onclick = () => stopTimer(false));
   $("#storyRerollBtn") && ($("#storyRerollBtn").onclick = () => consumeReroll());
   $("#storyConfirmStop") && ($("#storyConfirmStop").onclick = () => confirmStopAfterRerollOption());
   $("#storyFlee") && ($("#storyFlee").onclick = () => {
     if (!confirm("撤退将回到故事菜单（保留进度）")) return;
+    cancelTimingAnim();
+    Story.timing.active = false;
+    Story.timing.playerRunning = false;
     saveStory();
     openHub();
   });
@@ -646,14 +914,11 @@ function bindStory() {
   $("#storyRewardContinue") && ($("#storyRewardContinue").onclick = () => afterRewardContinue());
   $("#storyEndMenu") && ($("#storyEndMenu").onclick = () => openHub());
   $("#storyEndMain") && ($("#storyEndMain").onclick = () => closeStoryToMenu());
-  $("#storySkipHidden") && ($("#storySkipHidden").onclick = () => {
-    // used on ending if we add later
-  });
 
   window.addEventListener("keydown", (e) => {
     if (!Story.active) return;
     if (e.code === "Escape") {
-      if (Story.phase === "battle" && !Story.timing.running) {
+      if (Story.phase === "battle" && !Story.timing.active && !Story.timing.awaitingRerollConfirm) {
         e.preventDefault();
         e.stopPropagation();
         saveStory();
@@ -671,16 +936,16 @@ function bindStory() {
     if (e.code === "Space" || e.key === " ") {
       const visible = (el) => el && !el.classList.contains("hidden") && getComputedStyle(el).display !== "none";
       if (Story.phase === "battle") {
-        if (Story.timing.running) {
+        if (Story.timing.playerRunning) {
           e.preventDefault();
           e.stopPropagation();
           stopTimer(false);
           return;
         }
-        if (visible($("#storyStartTimer"))) {
+        if (visible($("#storyStartTimer")) && !Story.timing.active && !Story.timing.awaitingRerollConfirm) {
           e.preventDefault();
           e.stopPropagation();
-          startTimer();
+          startTimer(false);
           return;
         }
       }

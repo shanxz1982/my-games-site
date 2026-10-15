@@ -707,12 +707,40 @@
             overflow: hidden; margin: 0 auto; max-width: 420px;
         }
         .timing-needle {
-            position: absolute; top: 0; bottom: 0; width: 3px; left: 0;
+            position: absolute; top: 0; bottom: 0; width: 3px; left: 0; z-index: 2;
             background: #fff; box-shadow: 0 0 10px rgba(34,211,238,0.9);
         }
+        .timing-needle.enemy {
+            background: var(--magenta); box-shadow: 0 0 10px rgba(244,114,182,0.95); z-index: 2;
+        }
         .timing-mark {
-            position: absolute; top: -3px; bottom: -3px; width: 2px; left: 50%;
-            background: var(--magenta); box-shadow: 0 0 8px rgba(244,114,182,0.8);
+            position: absolute; top: -3px; bottom: -3px; width: 2px; left: 50%; z-index: 1;
+            background: var(--cyan); box-shadow: 0 0 8px rgba(34,211,238,0.85);
+        }
+        .timing-mark.enemy {
+            background: var(--magenta); box-shadow: 0 0 8px rgba(244,114,182,0.85);
+        }
+        .timing-target .enemy-target { color: var(--magenta); }
+        .story-diff-row {
+            display: flex; justify-content: center; gap: 8px; flex-wrap: wrap;
+            margin: 4px 0 10px;
+        }
+        .story-diff-btn {
+            min-width: 84px; padding: 8px 14px; border-radius: 999px; cursor: pointer;
+            font-family: inherit; font-weight: 700; font-size: 0.88rem;
+            background: rgba(255,255,255,0.06); border: 1px solid rgba(34,211,238,0.28);
+            color: var(--muted); transition: 0.15s ease;
+        }
+        .story-diff-btn:hover { color: var(--light); border-color: rgba(34,211,238,0.5); }
+        .story-diff-btn.active {
+            color: #031018; background: linear-gradient(135deg, #22d3ee, #a78bfa);
+            border-color: transparent; box-shadow: 0 0 16px rgba(34,211,238,0.35);
+        }
+        .story-diff-btn[data-diff="easy"].active {
+            background: linear-gradient(135deg, #6df9a3, #22d3ee);
+        }
+        .story-diff-btn[data-diff="hard"].active {
+            background: linear-gradient(135deg, #f472b6, #fb7185); color: #1a0510;
         }
         .story-odds-row {
             display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; margin-top: 12px;
@@ -968,7 +996,14 @@
                 <h2 class="menu-title" style="font-size:1.6rem">故事模式 · 营救公主</h2>
                 <p class="menu-sub">计时对决 · 战利品挑战 · 背包强化</p>
                 <div class="story-stat-row" id="storyHubStats"></div>
-                <p class="story-mini" id="storyHubProgress" style="margin-bottom:14px">—</p>
+                <p class="story-mini" id="storyHubProgress" style="margin-bottom:10px">—</p>
+                <p class="story-mini" style="margin-bottom:6px">选择难度</p>
+                <div class="story-diff-row" id="storyDiffRow" role="group" aria-label="难度">
+                    <button type="button" class="story-diff-btn" data-diff="easy">简单</button>
+                    <button type="button" class="story-diff-btn active" data-diff="normal">普通</button>
+                    <button type="button" class="story-diff-btn" data-diff="hard">困难</button>
+                </div>
+                <p class="story-mini" id="storyDiffHint" style="margin-bottom:14px">当前难度：普通</p>
                 <div class="story-btn-col">
                     <button type="button" class="hall-btn" id="storyNew">开始冒险</button>
                     <button type="button" class="btn-secondary" id="storyContinue">继续冒险</button>
@@ -1015,17 +1050,20 @@
                     </div>
                 </div>
                 <div class="story-combat-panel">
-                    <div class="menu-sub" style="margin:0">计时对决 · 最接近目标时间者发动攻击</div>
-                    <div class="timing-target">目标时间 <b id="storyTargetMs">500</b> ms</div>
+                    <div class="menu-sub" style="margin:0">计时对决 · 各自逼近自己的目标，更近者发动攻击</div>
+                    <div class="timing-target">你的目标 <b id="storyPlayerTargetMs">500</b> ms · 敌方目标 <b id="storyEnemyTargetMs" class="enemy-target">500</b> ms</div>
                     <div class="timing-track">
                         <div class="timing-needle" id="storyNeedle"></div>
+                        <div class="timing-needle enemy" id="storyEnemyNeedle"></div>
                         <div class="timing-mark" id="storyMark"></div>
+                        <div class="timing-mark enemy" id="storyEnemyMark"></div>
                     </div>
                     <div class="story-odds-row">
                         <div class="story-odds-box"><div class="mini">你的停表</div><b id="storyPlayerStop">—</b></div>
                         <div class="story-odds-box"><div class="mini">敌方停表</div><b id="storyEnemyStop">—</b></div>
-                        <div class="story-odds-box"><div class="mini">增益</div><b id="storyBuffFlags2" style="font-size:0.85rem">—</b></div>
+                        <div class="story-odds-box"><div class="mini">目标对比</div><b id="storyTargetCompare" style="font-size:0.85rem">—</b></div>
                     </div>
+                    <div class="story-mini" id="storyBuffFlags2" style="margin-top:8px">无增益</div>
                     <div class="story-btn-row" style="justify-content:center;margin-top:14px">
                         <button type="button" class="main-action-btn" id="storyStartTimer" style="width:auto;padding:12px 28px">开始计时</button>
                         <button type="button" class="main-action-btn hidden" id="storyStopTimer" style="width:auto;padding:12px 28px;background:linear-gradient(135deg,#f472b6,#22d3ee)">停！</button>
@@ -1037,7 +1075,7 @@
                         <div class="story-bag-list" id="storyBagList"></div>
                     </div>
                     <div class="story-log" id="storyLog"></div>
-                    <p class="kbd-hint">空格 = 开始/停止 · Esc 撤退到故事菜单</p>
+                    <p class="kbd-hint">空格 = 开始/停止（仅你）· 敌方自动停表 · Esc 撤退</p>
                 </div>
             </div>
         </div>
