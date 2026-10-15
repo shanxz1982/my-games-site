@@ -98,12 +98,40 @@
             height: 50px;
             margin: 2px;
             background: white;
-            border: 1px solid #ccc;
+            border: 2px solid #ccc;
+            border-radius: 8px;
+            transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s;
+            transform-style: preserve-3d;
         }
+        .suit-btn:hover { transform: translateY(-2px) scale(1.06); }
         .suit-btn.selected {
-            box-shadow: 0 0 10px var(--gold);
+            box-shadow: 0 0 0 2px var(--gold), 0 6px 16px rgba(255,215,0,0.45);
             border-color: var(--gold);
-            transform: scale(1.1);
+            transform: translateY(-3px) scale(1.12);
+            background: linear-gradient(160deg, #fffef5, #ffe082);
+        }
+        .bet-feedback {
+            margin-top: 8px;
+            min-height: 1.4em;
+            font-size: 13px;
+            color: #ffecb3;
+            transition: color 0.2s, transform 0.2s;
+        }
+        .bet-feedback.ready {
+            color: #81c784;
+            font-weight: 700;
+        }
+        .bet-feedback.pulse {
+            animation: betPulse 0.45s ease;
+        }
+        @keyframes betPulse {
+            0% { transform: scale(1); }
+            40% { transform: scale(1.08); }
+            100% { transform: scale(1); }
+        }
+        .player-bet-card.ready-bet {
+            border-left-width: 6px;
+            box-shadow: 0 0 0 1px rgba(76,175,80,0.35), 0 4px 14px rgba(0,0,0,0.25);
         }
 
         /* --- Race Screen --- */
@@ -162,45 +190,211 @@
             z-index: 1;
         }
 
-        /* Cards */
+        /* Cards — 3D stage */
+        .track-area,
+        .controls-area,
+        .pile-container,
+        .flipped-card-display,
+        .betting-grid {
+            perspective: 900px;
+            perspective-origin: 50% 40%;
+        }
+
         .card {
             width: var(--card-width);
             height: var(--card-height);
-            background: white;
-            border-radius: 6px;
-            box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
+            background: linear-gradient(160deg, #ffffff 0%, #f3f3f3 55%, #e8e8e8 100%);
+            border-radius: 8px;
+            border: 1px solid rgba(0,0,0,0.12);
+            box-shadow:
+                0 1px 0 rgba(255,255,255,0.85) inset,
+                0 -2px 4px rgba(0,0,0,0.06) inset,
+                0 4px 6px rgba(0,0,0,0.18),
+                0 10px 18px rgba(0,0,0,0.22),
+                0 18px 28px rgba(0,0,0,0.12);
             display: flex;
             justify-content: center;
             align-items: center;
             font-size: 24px;
+            font-weight: 700;
             position: absolute;
-            transition: all 0.6s cubic-bezier(0.25, 0.8, 0.25, 1);
+            transform-style: preserve-3d;
+            transform: translateZ(0) rotateX(var(--tilt-x, 0deg)) rotateY(var(--tilt-y, 0deg));
+            transition:
+                bottom 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+                box-shadow 0.25s ease,
+                filter 0.2s ease;
             user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            will-change: transform, bottom;
+            overflow: hidden;
+            backface-visibility: hidden;
+            animation: cardFloat 3.6s ease-in-out infinite;
         }
 
-        .card.red { color: #d32f2f; }
-        .card.black { color: #212121; }
-        
+        .card::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            background: linear-gradient(
+                125deg,
+                transparent 0%,
+                transparent 40%,
+                rgba(255,255,255,0.55) 48%,
+                rgba(255,255,255,0.15) 52%,
+                transparent 60%,
+                transparent 100%
+            );
+            background-size: 220% 220%;
+            background-position: 120% 0;
+            pointer-events: none;
+            z-index: 2;
+            opacity: 0.85;
+        }
+        .card:hover::before,
+        .card.shine::before {
+            animation: shineSweep 0.9s ease-out;
+        }
+
+        .card::after {
+            content: "";
+            position: absolute;
+            inset: 3px;
+            border-radius: 5px;
+            border: 1px solid rgba(0,0,0,0.06);
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .card.red { color: #c62828; }
+        .card.black { color: #1a1a1a; }
+
+        .card:hover,
+        .card.is-tilting {
+            animation-play-state: paused;
+            filter: brightness(1.04);
+            box-shadow:
+                0 1px 0 rgba(255,255,255,0.9) inset,
+                0 -2px 4px rgba(0,0,0,0.06) inset,
+                0 8px 12px rgba(0,0,0,0.22),
+                0 16px 28px rgba(0,0,0,0.28),
+                0 28px 40px rgba(0,0,0,0.16);
+            z-index: 20;
+        }
+
         /* Face Down Card Style */
         .card.back {
-            background: repeating-linear-gradient(
-                45deg,
-                #1565c0,
-                #1565c0 10px,
-                #0d47a1 10px,
-                #0d47a1 20px
-            );
-            border: 2px solid white;
+            background:
+                radial-gradient(circle at 30% 25%, rgba(255,255,255,0.18), transparent 45%),
+                repeating-linear-gradient(
+                    45deg,
+                    #1565c0,
+                    #1565c0 10px,
+                    #0d47a1 10px,
+                    #0d47a1 20px
+                );
+            border: 2px solid rgba(255,255,255,0.92);
+            color: transparent;
         }
         .card.back::after {
             content: "⚜";
-            color: rgba(255,255,255,0.5);
+            inset: auto;
+            border: none;
+            color: rgba(255,255,255,0.55);
             font-size: 30px;
+            text-shadow: 0 2px 6px rgba(0,0,0,0.35);
+            z-index: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            left: 0; top: 0;
+        }
+
+        /* Deal / reveal flip */
+        .card.flip-deal {
+            animation: cardFlipDeal 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+        .card.flip-reveal {
+            animation: cardFlipReveal 0.65s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        @keyframes cardFloat {
+            0%, 100% { transform: translateY(0) translateZ(0) rotateX(var(--tilt-x, 0deg)) rotateY(var(--tilt-y, 0deg)); }
+            50% { transform: translateY(-3px) translateZ(6px) rotateX(var(--tilt-x, 0deg)) rotateY(var(--tilt-y, 0deg)); }
+        }
+        @keyframes shineSweep {
+            0% { background-position: 120% 0; }
+            100% { background-position: -40% 0; }
+        }
+        @keyframes cardFlipDeal {
+            0%   { transform: rotateY(-90deg) scale(0.92); opacity: 0.4; }
+            55%  { transform: rotateY(12deg) scale(1.04); opacity: 1; }
+            100% { transform: rotateY(0deg) scale(1); opacity: 1; }
+        }
+        @keyframes cardFlipReveal {
+            0%   { transform: rotateY(0deg); }
+            45%  { transform: rotateY(90deg) scale(1.02); }
+            55%  { transform: rotateY(90deg) scale(1.02); }
+            100% { transform: rotateY(0deg); }
+        }
+
+        /* Drawn card showcase (3D) */
+        .flipped-card-display {
+            position: relative;
+            transform-style: preserve-3d;
+        }
+        .flipped-card-display .deal-card {
+            position: relative;
+            width: calc(var(--card-width) * 1.15);
+            height: calc(var(--card-height) * 1.15);
+            margin: 0 auto;
+            font-size: 28px;
+            animation: cardFloat 3.6s ease-in-out infinite, cardFlipDeal 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+        .flipped-card-display .deal-placeholder {
+            opacity: 0.45;
+            letter-spacing: 0.1em;
         }
 
         /* Specific Card Positions */
         .horse {
             z-index: 10;
+            cursor: pointer;
+        }
+        .horse.leading {
+            box-shadow:
+                0 0 0 2px rgba(255,215,0,0.65),
+                0 1px 0 rgba(255,255,255,0.9) inset,
+                0 8px 14px rgba(0,0,0,0.25),
+                0 0 22px rgba(255,215,0,0.35);
+        }
+
+        /* Mobile: lighter motion, keep usable */
+        @media (max-width: 640px) {
+            :root {
+                --card-width: 48px;
+                --card-height: 68px;
+            }
+            .card {
+                animation-duration: 4.5s;
+            }
+            .card:hover {
+                animation-play-state: running;
+            }
+            .flipped-card-display .deal-card {
+                font-size: 22px;
+            }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .card,
+            .flipped-card-display .deal-card {
+                animation: none !important;
+            }
+            .card::before { animation: none !important; }
         }
 
         .side-track-container {
@@ -264,13 +458,16 @@
         .suit-heart, .suit-diamond { color: red; }
         
         /* Animation classes */
-        .shake { animation: shake 0.5s; }
+        .shake { animation: shake 0.4s ease-in-out; }
         @keyframes shake {
-            0% { transform: translateX(0); }
-            25% { transform: translateX(-5px); }
-            50% { transform: translateX(5px); }
-            75% { transform: translateX(-5px); }
-            100% { transform: translateX(0); }
+            0%, 100% { transform: translateX(0) rotateX(var(--tilt-x, 0deg)) rotateY(var(--tilt-y, 0deg)); }
+            20% { transform: translateX(-6px) rotateZ(-2deg); }
+            40% { transform: translateX(6px) rotateZ(2deg); }
+            60% { transform: translateX(-4px); }
+            80% { transform: translateX(4px); }
+        }
+        .card.moving-fwd {
+            filter: brightness(1.08);
         }
 
         /* Hub back + AdSense (light, non-layout-breaking) */
@@ -385,7 +582,7 @@
                 <div style="text-align:center; width: 100%;">
                     <small>最新翻牌</small>
                     <div id="current-card-display" class="flipped-card-display">
-                        -
+                        <span class="deal-placeholder">等待翻牌</span>
                     </div>
                 </div>
 
@@ -545,15 +742,18 @@
             html += `余额: $${p.balance}<br>`;
             
             if (p.type === 'human') {
-                html += `<div>选择马匹: <br>`;
+                html += `<div class="suit-pick">选择马匹: <br>`;
                 SUIT_KEYS.forEach(suit => {
-                    html += `<button class="suit-btn suit-${suit}" onclick="selectHorse(${p.id}, '${suit}', this)">${SUITS[suit].symbol}</button>`;
+                    html += `<button type="button" class="suit-btn suit-${suit}" onclick="selectHorse(${p.id}, '${suit}', this)">${SUITS[suit].symbol}</button>`;
                 });
                 html += `</div>`;
-                html += `下注: <input type="number" id="bet-${p.id}" value="100" min="10" max="${p.balance}" style="width:60px;">`;
+                html += `下注: <input type="number" id="bet-${p.id}" value="100" min="10" max="${p.balance}" style="width:60px;" oninput="updateBetFeedback(${p.id})">`;
+                html += `<div class="bet-feedback" id="bet-fb-${p.id}">请选择马匹并确认下注</div>`;
             } else {
                 html += `已准备好 (下注 $${p.bet} on ${SUITS[p.horse].symbol})`;
+                div.classList.add('ready-bet');
             }
+            div.id = `bet-card-${p.id}`;
             div.innerHTML = html;
             container.appendChild(div);
         });
@@ -561,10 +761,37 @@
 
     function selectHorse(playerId, suit, btn) {
         state.players[playerId].horse = suit;
-        // Visual toggle
         const parent = btn.parentElement;
-        Array.from(parent.children).forEach(c => c.classList.remove('selected'));
+        Array.from(parent.querySelectorAll('.suit-btn')).forEach(c => c.classList.remove('selected'));
         btn.classList.add('selected');
+        updateBetFeedback(playerId, true);
+    }
+
+    function updateBetFeedback(playerId, pulse) {
+        const p = state.players[playerId];
+        const fb = document.getElementById(`bet-fb-${playerId}`);
+        const card = document.getElementById(`bet-card-${playerId}`);
+        const betInput = document.getElementById(`bet-${playerId}`);
+        if (!fb || !p) return;
+        const bet = betInput ? parseInt(betInput.value, 10) : p.bet;
+        if (p.horse && bet > 0 && bet <= p.balance) {
+            fb.textContent = `✓ 已选 ${SUITS[p.horse].symbol} ${SUITS[p.horse].name} · 下注 $${bet}`;
+            fb.classList.add('ready');
+            if (card) card.classList.add('ready-bet');
+        } else if (p.horse) {
+            fb.textContent = `已选 ${SUITS[p.horse].symbol} — 请输入有效下注额`;
+            fb.classList.remove('ready');
+            if (card) card.classList.remove('ready-bet');
+        } else {
+            fb.textContent = '请选择马匹并确认下注';
+            fb.classList.remove('ready');
+            if (card) card.classList.remove('ready-bet');
+        }
+        if (pulse) {
+            fb.classList.remove('pulse');
+            void fb.offsetWidth;
+            fb.classList.add('pulse');
+        }
     }
 
     function startRace() {
@@ -619,8 +846,8 @@
             horse.className = `card horse ${SUITS[suit].color === 'red' ? 'red' : 'black'}`;
             horse.innerHTML = `${SUITS[suit].symbol} K`;
             horse.id = `horse-${suit}`;
-            // Initial Position: Bottom
             horse.style.bottom = '0px';
+            enableCardTilt(horse);
             
             lane.appendChild(horse);
             container.appendChild(lane);
@@ -638,9 +865,9 @@
             const cardDiv = document.createElement('div');
             cardDiv.className = 'card back';
             cardDiv.id = `side-card-${index}`;
-            // We set bottom position based on calculation in updatePositions
             cardDiv.style.position = 'absolute';
             cardDiv.style.right = '0';
+            enableCardTilt(cardDiv);
             
             sideContainer.appendChild(cardDiv);
         });
@@ -661,33 +888,41 @@
 
     function updatePositions() {
         const stepHeight = getStepHeight();
+        const maxPos = Math.max(...SUIT_KEYS.map(s => state.horses[s]));
         
         // Update Horses
         SUIT_KEYS.forEach(suit => {
             const pos = state.horses[suit];
             const el = document.getElementById(`horse-${suit}`);
+            if (!el) return;
             el.style.bottom = `${pos * stepHeight + 10}px`;
+            el.classList.toggle('leading', pos === maxPos && maxPos > 0);
         });
 
         // Update Side Cards positions
         state.sideCards.forEach((item, index) => {
             const el = document.getElementById(`side-card-${index}`);
-            // Side cards represent the hurdles at pos 1, 2, 3...
-            // Visual position should be between step N and N+1? 
-            // The rule: "Crossed a face-down card". So card is at specific Y.
-            // Let's place side card at position index.
+            if (!el) return;
             el.style.bottom = `${(item.position) * stepHeight + 10}px`;
             
-            if (item.flipped) {
-                el.className = `card ${SUITS[item.card.suit].color}`;
-                el.innerHTML = `${SUITS[item.card.suit].symbol}${item.card.value}`;
+            if (item.flipped && el.dataset.face !== 'up') {
+                // Mid-flip content swap handled by flipSideCard; keep face if already up
+                revealSideCardFace(el, item.card);
             }
         });
 
         // Update Finish Line
         const finishLine = document.querySelector('.finish-line');
         finishLine.style.bottom = `${(state.trackLength + 1) * stepHeight + 10}px`;
-        finishLine.style.top = 'auto'; // Reset top from CSS
+        finishLine.style.top = 'auto';
+    }
+
+    function revealSideCardFace(el, card) {
+        el.classList.remove('back');
+        el.classList.add(SUITS[card.suit].color === 'red' ? 'red' : 'black');
+        el.innerHTML = `${SUITS[card.suit].symbol}${card.value}`;
+        el.dataset.face = 'up';
+        enableCardTilt(el);
     }
 
     function drawCard() {
@@ -699,15 +934,27 @@
             return;
         }
 
-        // Show drawn card
+        // Show drawn card with 3D flip-in
         const display = document.getElementById('current-card-display');
-        display.innerHTML = `<span style="color:${SUITS[card.suit].color}">${SUITS[card.suit].symbol} ${card.value}</span>`;
-        display.className = "flipped-card-display shake";
-        setTimeout(() => display.classList.remove('shake'), 500);
+        const colorClass = SUITS[card.suit].color === 'red' ? 'red' : 'black';
+        display.className = 'flipped-card-display';
+        display.innerHTML = '';
+        const dealEl = document.createElement('div');
+        dealEl.className = `card deal-card ${colorClass} flip-deal shine`;
+        dealEl.style.position = 'relative';
+        dealEl.innerHTML = `${SUITS[card.suit].symbol} ${card.value}`;
+        display.appendChild(dealEl);
+        enableCardTilt(dealEl);
 
         // Move Horse
         state.horses[card.suit]++;
         logCommentary(`${SUITS[card.suit].name} 前进一格！`);
+
+        const horseEl = document.getElementById(`horse-${card.suit}`);
+        if (horseEl) {
+            horseEl.classList.add('moving-fwd', 'shine');
+            setTimeout(() => horseEl.classList.remove('moving-fwd', 'shine'), 500);
+        }
         
         updatePositions();
         updateRanking();
@@ -748,32 +995,42 @@
 
     function flipSideCard(index) {
         const side = state.sideCards[index];
+        if (side.flipped) return;
         side.flipped = true;
         
         const cardSuit = side.card.suit;
         const cardName = SUITS[cardSuit].name;
+        const el = document.getElementById(`side-card-${index}`);
         
         setTimeout(() => {
             logCommentary(`🔔 赛道翻牌！是一张 ${cardName} ${side.card.value}！`);
-            updatePositions(); // Show flip
+            if (el) {
+                el.classList.add('flip-reveal');
+                // Swap face at mid-flip
+                setTimeout(() => {
+                    revealSideCardFace(el, side.card);
+                    el.classList.add('shine');
+                }, 280);
+                setTimeout(() => el.classList.remove('flip-reveal', 'shine'), 700);
+            } else {
+                updatePositions();
+            }
             
-            // Penalty Logic
-            // "If suit matches a horse, that horse moves back 1 step"
             setTimeout(() => {
                 const horsePos = state.horses[cardSuit];
                 if (horsePos > 0) {
                     state.horses[cardSuit]--;
                     logCommentary(`🚫 哎呀！${cardName} 被迫退后一格！`);
                     
-                    // Visual feedback
                     const horseEl = document.getElementById(`horse-${cardSuit}`);
-                    horseEl.classList.add('shake');
-                    setTimeout(() => horseEl.classList.remove('shake'), 500);
-                    
+                    if (horseEl) {
+                        horseEl.classList.add('shake');
+                        setTimeout(() => horseEl.classList.remove('shake'), 400);
+                    }
                     updatePositions();
                 }
-            }, 800);
-        }, 300);
+            }, 650);
+        }, 180);
     }
 
     function toggleAuto() {
@@ -791,7 +1048,7 @@
                 } else {
                     drawCard();
                 }
-            }, 1500); // 1.5s delay
+            }, 1200); // snappier auto
             document.getElementById('auto-btn').innerText = "停止演示";
             document.getElementById('auto-btn').classList.remove('secondary');
         }
@@ -891,8 +1148,49 @@
         location.reload();
     }
 
+    /**
+     * Lightweight pointer-follow tilt (desktop); skipped on coarse pointers / reduced motion
+     */
+    function enableCardTilt(el) {
+        if (!el || el.dataset.tiltBound === '1') return;
+        el.dataset.tiltBound = '1';
+        const fine = window.matchMedia('(pointer: fine)').matches;
+        const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        if (!fine || reduce) return;
+
+        const onMove = (e) => {
+            if (el.classList.contains('flip-deal') || el.classList.contains('flip-reveal') || el.classList.contains('shake')) return;
+            const r = el.getBoundingClientRect();
+            const px = (e.clientX - r.left) / r.width - 0.5;
+            const py = (e.clientY - r.top) / r.height - 0.5;
+            const rx = (-py * 14).toFixed(2);
+            const ry = (px * 18).toFixed(2);
+            el.style.setProperty('--tilt-x', rx + 'deg');
+            el.style.setProperty('--tilt-y', ry + 'deg');
+            el.style.animationPlayState = 'paused';
+            el.style.transform = `translateY(-2px) translateZ(10px) rotateX(${rx}deg) rotateY(${ry}deg)`;
+            el.classList.add('is-tilting');
+        };
+        const onLeave = () => {
+            el.style.removeProperty('--tilt-x');
+            el.style.removeProperty('--tilt-y');
+            el.style.removeProperty('transform');
+            el.style.removeProperty('animation-play-state');
+            el.classList.remove('is-tilting');
+        };
+        el.addEventListener('pointermove', onMove);
+        el.addEventListener('pointerleave', onLeave);
+    }
+
+    function bindStaticPileTilt() {
+        document.querySelectorAll('.pile-container .card').forEach(enableCardTilt);
+    }
+
     // --- Start ---
-    window.onload = init;
+    window.onload = () => {
+        init();
+        bindStaticPileTilt();
+    };
 
 </script>
 
