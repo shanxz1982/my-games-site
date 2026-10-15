@@ -348,11 +348,16 @@ function showNarration() {
 }
 
 function rollPlayerTarget(ch) {
-  let t = asSec(ch.targetSec);
-  if (Story.difficulty === "hard") {
-    t += (Math.random() * 0.40) - 0.20;
-  }
-  return roundSec(clamp(t, 3.00, 9.00));
+  // Per-round randomized target (same idea as enemy): chapter base + signed offset.
+  // Difficulty widens the spread slightly; always clamp to a playable 3–9s range.
+  const base = asSec(ch.targetSec);
+  const d = Story.difficulty;
+  let span = 5.60; // ±2.80 — matches enemy default
+  if (d === "easy") span = 4.00;   // ±2.00
+  else if (d === "hard") span = 6.40; // ±3.20
+  let offset = Math.random() * span - span / 2;
+  if (Math.abs(offset) < 0.05) offset = Math.random() < 0.5 ? -0.40 : 0.40;
+  return roundSec(clamp(base + offset, 3.00, 9.00));
 }
 
 function rollEnemyTarget(ch) {
@@ -380,6 +385,14 @@ function rollEnemyNoise() {
   return Math.round(sign * mag * 100) / 100;
 }
 
+function pulseTargetEl(el) {
+  if (!el) return;
+  el.classList.remove("target-pulse");
+  // Force reflow so re-adding the class retriggers the CSS animation
+  void el.offsetWidth;
+  el.classList.add("target-pulse");
+}
+
 function updateTargetUI() {
   Story.timing.playerTargetSec = roundSec(asSec(Story.timing.playerTargetSec));
   Story.timing.enemyTargetSec = roundSec(asSec(Story.timing.enemyTargetSec));
@@ -387,8 +400,18 @@ function updateTargetUI() {
   const e = Story.timing.enemyTargetSec;
   const pEl = $("#storyPlayerTargetSec");
   const eEl = $("#storyEnemyTargetSec");
-  if (pEl) pEl.textContent = fmtSec(p);
-  if (eEl) eEl.textContent = fmtSec(e);
+  if (pEl) {
+    const next = fmtSec(p);
+    const changed = pEl.textContent !== next;
+    pEl.textContent = next;
+    if (changed) pulseTargetEl(pEl);
+  }
+  if (eEl) {
+    const next = fmtSec(e);
+    const changed = eEl.textContent !== next;
+    eEl.textContent = next;
+    if (changed) pulseTargetEl(eEl);
+  }
 }
 
 
@@ -460,7 +483,7 @@ function beginBattle() {
   updateBuffFlags();
   log(
     (ch.midBoss || ch.finalBoss ? "⚠ 首领战！ " : "") +
-    "你的目标 " + fmtSec(Story.timing.playerTargetSec) + " 秒 · 敌方目标 " + fmtSec(Story.timing.enemyTargetSec) +
+    "本回合目标随机：你 " + fmtSec(Story.timing.playerTargetSec) + " 秒 · 敌 " + fmtSec(Story.timing.enemyTargetSec) +
     " 秒 — 各自逼近自己的目标，误差差越大伤害越高。（" + d.label + "）"
   );
 }
@@ -778,7 +801,7 @@ function scheduleNextTurn() {
     setBtnVisible($("#storyRerollBtn"), false);
     setBtnVisible($("#storyConfirmStop"), false);
     renderBag();
-    log("—— 下一回合 · 你 " + fmtSec(Story.timing.playerTargetSec) + "秒 / 敌 " + fmtSec(Story.timing.enemyTargetSec) + "秒 ——");
+    log("—— 下一回合 · 目标已重掷 · 你 " + fmtSec(Story.timing.playerTargetSec) + "秒 / 敌 " + fmtSec(Story.timing.enemyTargetSec) + "秒 ——");
   }, 420);
 }
 

@@ -851,8 +851,17 @@
         }
         .story-card-track { margin: 8px auto 4px; max-width: 100%; }
         .timing-target { color: var(--muted); margin: 4px 0 2px; font-size: 0.82rem; }
-        .timing-target b { color: var(--cyan); font-size: 1.05rem; }
+        .timing-target b { color: var(--cyan); font-size: 1.15rem; font-variant-numeric: tabular-nums; }
         .timing-target .enemy-target { color: var(--magenta); }
+        .timing-target b.target-pulse {
+            animation: storyTargetPulse 0.7s ease;
+        }
+        @keyframes storyTargetPulse {
+            0% { transform: scale(1); text-shadow: none; }
+            35% { transform: scale(1.28); text-shadow: 0 0 14px currentColor; }
+            100% { transform: scale(1); text-shadow: none; }
+        }
+        .timing-target b { display: inline-block; }
         .timing-track {
             position: relative; height: 14px; border-radius: 999px;
             background: rgba(255,255,255,0.06); border: 1px solid rgba(34,211,238,0.25);
@@ -1361,12 +1370,12 @@
                 </div>
 
                 <div class="story-combat-panel">
-                    <div class="menu-sub" style="margin:0">计时对决 · 各自逼近自己的目标，更近者发动攻击</div>
+                    <div class="menu-sub" style="margin:0">计时对决 · 每回合双方目标随机重掷 · 各自逼近自己的目标，更近者发动攻击</div>
                     <div class="story-timing-grid">
                         <div class="story-timing-card player">
                             <div class="player-keyhint">空格 · 你</div>
                             <div class="player-name">你</div>
-                            <div class="timing-target">目标 <b id="storyPlayerTargetSec">5.00</b> 秒</div>
+                            <div class="timing-target">本回合目标 <b id="storyPlayerTargetSec" class="player-target">5.00</b> 秒</div>
                             <div class="player-timer" id="storyPlayerTimer">0.00</div>
                             <div class="player-status" id="storyPlayerStatus">等待开始</div>
                             <div class="story-mini" id="storyPlayerStop">停表 —</div>
@@ -1380,7 +1389,7 @@
                         <div class="story-timing-card enemy">
                             <div class="player-keyhint">自动 · 敌</div>
                             <div class="player-name" id="storyEnemyCardName">敌人</div>
-                            <div class="timing-target">目标 <b id="storyEnemyTargetSec" class="enemy-target">5.00</b> 秒</div>
+                            <div class="timing-target">本回合目标 <b id="storyEnemyTargetSec" class="enemy-target">5.00</b> 秒</div>
                             <div class="player-timer" id="storyEnemyTimer">0.00</div>
                             <div class="player-status" id="storyEnemyStatus">待机 · 自动</div>
                             <div class="story-mini" id="storyEnemyStop">停表 —</div>
