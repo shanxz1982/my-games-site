@@ -20,48 +20,51 @@ const ITEM_DEFS = {
   reroll: { id: "reroll", name: "重停表",   emoji: "🔁", desc: "本回合可重停一次" }
 };
 
+const HERO_ART = { emoji: "⚔️", art: "assets/portraits/hero.png" };
+const PRINCESS_ART = { emoji: "👸", art: "assets/portraits/princess.png" };
+
 const CHAPTERS = [
   {
     id: 1, title: "边陲的烽火",
     narrate: "王国边陲传来异变。年轻的勇者接过锈迹斑斑的剑，踏上营救被魔王掳走的公主之路。\n第一关：密林入口，一群哥布林挡路。\n——用 TIME STOPPER 的直觉，停在自己目标时间最近的那一帧。",
-    enemy: { name: "哥布林斥候", emoji: "👺", hp: 42, atk: 9, def: 1, kind: "mob" },
+    enemy: { name: "哥布林斥候", emoji: "👺", art: "assets/portraits/goblin.png", hp: 42, atk: 9, def: 1, kind: "mob" },
     targetSec: 5.00
   },
   {
     id: 2, title: "迷雾河谷",
     narrate: "穿过密林，河谷升起灰雾。石像鬼在断桥上嘶鸣。\n勇者稳住呼吸——计时一决，快一步则生。",
-    enemy: { name: "石像鬼", emoji: "🗿", hp: 58, atk: 12, def: 3, kind: "mob" },
+    enemy: { name: "石像鬼", emoji: "🗿", art: "assets/portraits/gargoyle.png", hp: 58, atk: 12, def: 3, kind: "mob" },
     targetSec: 6.50
   },
   {
     id: 3, title: "中段首领 · 暗影骑士",
     narrate: "峡谷尽头立着黑甲骑士。他自称魔王先锋：\n「想救公主？先赢过我的心跳。」\n——中段首领战。",
-    enemy: { name: "暗影骑士", emoji: "🖤", hp: 95, atk: 16, def: 5, kind: "boss" },
+    enemy: { name: "暗影骑士", emoji: "🖤", art: "assets/portraits/shadow_knight.png", hp: 95, atk: 16, def: 5, kind: "boss" },
     targetSec: 4.80,
     midBoss: true
   },
   {
     id: 4, title: "熔岩回廊",
     narrate: "骑士倒下，道路通向灼热的熔岩回廊。火焰精灵成群扑来。\n背包里的符文隐隐发热——善用道具，方能活着走出地狱。",
-    enemy: { name: "火焰精灵群", emoji: "🔥", hp: 72, atk: 14, def: 2, kind: "mob" },
+    enemy: { name: "火焰精灵群", emoji: "🔥", art: "assets/portraits/fire_spirits.png", hp: 72, atk: 14, def: 2, kind: "mob" },
     targetSec: 4.20
   },
   {
     id: 5, title: "镜之迷宫",
     narrate: "魔王城堡外墙是无数镜子。分身敌军扰乱视线。\n目标时间变幻不定——专注，才能看见真实。",
-    enemy: { name: "镜影刺客", emoji: "🪞", hp: 78, atk: 15, def: 3, kind: "mob" },
+    enemy: { name: "镜影刺客", emoji: "🪞", art: "assets/portraits/mirror_assassin.png", hp: 78, atk: 15, def: 3, kind: "mob" },
     targetSec: 7.20
   },
   {
     id: 6, title: "王座之前",
     narrate: "王座厅大门半开。公主的呼喊隐约可闻。\n门卫巨魔拔出钉锤：「再近一步，骨头开花。」",
-    enemy: { name: "门卫巨魔", emoji: "👹", hp: 105, atk: 17, def: 6, kind: "mob" },
+    enemy: { name: "门卫巨魔", emoji: "👹", art: "assets/portraits/gate_troll.png", hp: 105, atk: 17, def: 6, kind: "mob" },
     targetSec: 5.50
   },
   {
     id: 7, title: "最终决战 · 营救公主",
     narrate: "魔王从阴影中现身，公主被锁在水晶牢中。\n「时间与勇气，都站在强者一边。」\n勇者举起剑——这是最后一战。",
-    enemy: { name: "魔王", emoji: "😈", hp: 150, atk: 22, def: 8, kind: "boss" },
+    enemy: { name: "魔王", emoji: "😈", art: "assets/portraits/demon_king.png", hp: 150, atk: 22, def: 8, kind: "boss" },
     targetSec: 5.00,
     finalBoss: true
   }
@@ -388,6 +391,19 @@ function updateTargetUI() {
   if (eEl) eEl.textContent = fmtSec(e);
 }
 
+
+function setPortraitArt(el, artPath, emojiFallback) {
+  if (!el) return;
+  const fallback = emojiFallback || "👾";
+  if (artPath) {
+    el.innerHTML =
+      '<img class="story-portrait-img" src="' + artPath + '" alt="" ' +
+      'onerror="this.style.display=\'none\';this.parentNode.textContent=\'' + fallback + '\';" />';
+  } else {
+    el.textContent = fallback;
+  }
+}
+
 function beginBattle() {
   const ch = CHAPTERS[Story.chapterIndex];
   if (!ch) return;
@@ -399,6 +415,7 @@ function beginBattle() {
   Story.enemy = {
     name: ch.enemy.name,
     emoji: ch.enemy.emoji,
+    art: ch.enemy.art || null,
     hp: maxHp,
     maxHp: maxHp,
     atk: atk,
@@ -424,7 +441,8 @@ function beginBattle() {
   $("#storyHeroLv").textContent = Story.hero.name + " Lv." + Story.hero.level;
   $("#storyHeroName").textContent = Story.hero.name;
   $("#storyEnemyName").textContent = Story.enemy.name;
-  $("#storyEnemyArt").textContent = Story.enemy.emoji;
+  setPortraitArt($("#storyEnemyArt"), Story.enemy.art, Story.enemy.emoji);
+  setPortraitArt($("#storyHeroArt"), HERO_ART.art, HERO_ART.emoji);
   setHpBar($("#storyHeroHpBar"), $("#storyHeroHpText"), Story.hero.hp, Story.hero.maxHp);
   setHpBar($("#storyEnemyHpBar"), $("#storyEnemyHpText"), Story.enemy.hp, Story.enemy.maxHp);
   updateTargetUI();
@@ -888,6 +906,7 @@ function showEnding(victory) {
   Story.phase = "ending";
   showStoryOnly("storyEnding");
   if (victory) {
+    setPortraitArt($("#storyEndArt"), PRINCESS_ART.art, PRINCESS_ART.emoji);
     $("#storyEndTitle").textContent = "公主得救了！";
     $("#storyEndBody").textContent =
       "魔王倒下，水晶碎裂。公主握住勇者的手：\n「计时与勇气，缺一不可。王国将铭记这一天。」\n\n—— 故事模式通关（" +
@@ -900,6 +919,7 @@ function showEnding(victory) {
     Story.bag = [];
     Story.chapterIndex = 0;
   } else {
+    setPortraitArt($("#storyEndArt"), HERO_ART.art, HERO_ART.emoji);
     $("#storyEndTitle").textContent = "冒险中断…";
     $("#storyEndBody").textContent =
       "黑暗吞没了意识。但传说不会结束——从故事菜单再次启程吧。\n（进度已保存到战败前的关卡 · " +
