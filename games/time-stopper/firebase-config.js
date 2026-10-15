@@ -1,6 +1,8 @@
 /**
  * Firebase config shared with dice-football (Firestore).
- * Used by TIME STOPPER 英灵殿 cloud collection: timestopper_hall
+ * Used by TIME STOPPER 英灵殿: timestopper_hall
+ * Online multiplayer rooms: timestopper_rooms/{roomCode}
+ * (see online.js header for suggested Firestore rules)
  * Copy of games/dice-football/firebase-config.js — keep values in sync.
  */
 window.FIREBASE_CONFIG = {
