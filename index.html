@@ -4,59 +4,159 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Shan 的小游戏站</title>
-  <meta name="description" content="自制小游戏合集 — 时间终结者等精选手作游戏">
+  <meta name="description" content="自制小游戏合集 — PS5 风格游戏库 · 时间终结者等精选手作游戏">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8E%AE%3C/text%3E%3C/svg%3E">
   <link rel="stylesheet" href="assets/hub.css">
 </head>
 <body>
-  <div class="bg-orbs" aria-hidden="true"></div>
+  <div class="bg-stage" aria-hidden="true"></div>
+  <div class="bg-grid" aria-hidden="true"></div>
+  <div class="bg-scan" aria-hidden="true"></div>
 
-  <header class="site-header">
-    <div class="brand">
-      <span class="brand-icon" aria-hidden="true">🎮</span>
-      <div>
-        <h1 class="site-title">Shan 的小游戏站</h1>
-        <p class="site-tagline">自制小游戏 · 纯静态 · 即开即玩</p>
+  <div class="shell">
+    <header class="media-bar">
+      <div class="media-brand">
+        <span class="icon" aria-hidden="true">🎮</span>
+        <div>
+          <h1>Shan 的小游戏站</h1>
+          <div class="tag">GAME LIBRARY</div>
+        </div>
       </div>
-    </div>
-  </header>
+      <div class="media-meta">纯静态 · 即开即玩</div>
+    </header>
 
-  <main class="container">
-    <section class="intro">
-      <h2>游戏库</h2>
-      <p>挑选一款，点开即玩。无需安装，手机与电脑皆可。</p>
+    <section class="hero is-focus" id="hero" aria-label="精选游戏">
+      <div class="hero-art" aria-hidden="true">
+        <div class="cover-grid"></div>
+        <div class="cover-ring"></div>
+        <span class="cover-emoji">⏱️</span>
+      </div>
+      <div class="hero-info">
+        <span class="hero-badge">FEATURED</span>
+        <h2 class="hero-title" id="heroTitle">时间终结者 <span class="en">TIME STOPPER</span></h2>
+        <p class="hero-blurb" id="heroBlurb">考验时机与反应的时间系技能小游戏。卡住关键帧，冲上排行榜。</p>
+        <div class="hero-actions">
+          <a class="btn-play" id="heroPlay" href="games/time-stopper/">开始游玩</a>
+          <span class="btn-ghost" id="heroMeta">自由 / 挑战 / 无限 / 多人</span>
+        </div>
+        <p class="kbd-tip">← → 选择游戏 · Enter 开始</p>
+      </div>
     </section>
 
-    <section class="game-grid" aria-label="游戏列表">
-      <article class="game-card">
-        <div class="card-badge">上线</div>
-        <div class="card-visual" aria-hidden="true">
-          <div class="clock-ring"></div>
-          <span class="card-emoji">⏱️</span>
+    <section class="library" aria-label="游戏库">
+      <div class="library-head">
+        <h2>游戏库</h2>
+        <span>横向浏览 · 聚焦放大</span>
+      </div>
+      <div class="game-row" id="gameRow" tabindex="0" role="listbox" aria-label="游戏列表">
+        <a class="tile is-focused" role="option" aria-selected="true" tabindex="-1"
+           data-title="时间终结者" data-en="TIME STOPPER"
+           data-blurb="考验时机与反应的时间系技能小游戏。卡住关键帧，冲上排行榜。"
+           data-meta="自由 / 挑战 / 无限 / 多人"
+           data-emoji="⏱️" href="games/time-stopper/">
+          <div class="tile-cover"><span class="emoji">⏱️</span></div>
+          <div class="tile-body"><h3>时间终结者</h3><p>TIME STOPPER</p></div>
+        </a>
+        <div class="tile locked" role="option" aria-selected="false" tabindex="-1"
+             data-title="更多游戏即将上线" data-en="COMING SOON"
+             data-blurb="新作筹备中，敬请关注本站更新。"
+             data-meta="敬请期待" data-emoji="🧩" data-locked="1">
+          <div class="tile-cover dim"><span class="emoji">🧩</span></div>
+          <div class="tile-body"><h3>敬请期待</h3><p>COMING SOON</p></div>
         </div>
-        <div class="card-body">
-          <h3 class="card-title">时间终结者 <span class="en">TIME STOPPER</span></h3>
-          <p class="card-blurb">考验时机与反应的时间系技能小游戏。卡住关键帧，冲上排行榜。</p>
-          <a class="play-btn" href="games/time-stopper/">开始游玩 →</a>
+        <div class="tile locked" role="option" aria-selected="false" tabindex="-1"
+             data-title="神秘新作" data-en="LOCKED"
+             data-blurb="槽位预留中……下一部作品将在此亮相。"
+             data-meta="未解锁" data-emoji="🔒" data-locked="1">
+          <div class="tile-cover dim"><span class="emoji">🔒</span></div>
+          <div class="tile-body"><h3>未解锁</h3><p>LOCKED</p></div>
         </div>
-      </article>
-
-      <article class="game-card placeholder" aria-hidden="false">
-        <div class="card-badge muted">敬请期待</div>
-        <div class="card-visual dim" aria-hidden="true">
-          <span class="card-emoji">🧩</span>
+        <div class="tile locked" role="option" aria-selected="false" tabindex="-1"
+             data-title="神秘新作" data-en="LOCKED"
+             data-blurb="槽位预留中……下一部作品将在此亮相。"
+             data-meta="未解锁" data-emoji="🎲" data-locked="1">
+          <div class="tile-cover dim"><span class="emoji">🎲</span></div>
+          <div class="tile-body"><h3>未解锁</h3><p>LOCKED</p></div>
         </div>
-        <div class="card-body">
-          <h3 class="card-title">更多游戏即将上线</h3>
-          <p class="card-blurb">新作筹备中，敬请关注本站更新。</p>
-          <span class="play-btn disabled" tabindex="-1" aria-disabled="true">即将开放</span>
-        </div>
-      </article>
+      </div>
     </section>
-  </main>
 
-  <footer class="site-footer">
-    <p>© 自制小游戏门户 · 本地打开 <code>index.html</code> 即可游玩</p>
-  </footer>
+    <footer class="site-footer">
+      <p>© 自制小游戏门户 · 本地打开 <code>index.html</code> 即可游玩</p>
+    </footer>
+  </div>
+
+  <script>
+    (function () {
+      const row = document.getElementById('gameRow');
+      const tiles = Array.from(row.querySelectorAll('.tile'));
+      const hero = document.getElementById('hero');
+      const heroTitle = document.getElementById('heroTitle');
+      const heroBlurb = document.getElementById('heroBlurb');
+      const heroPlay = document.getElementById('heroPlay');
+      const heroMeta = document.getElementById('heroMeta');
+      const coverEmoji = document.querySelector('.hero-art .cover-emoji');
+      let focusIdx = 0;
+
+      function applyHero(tile) {
+        const title = tile.dataset.title || '';
+        const en = tile.dataset.en || '';
+        const blurb = tile.dataset.blurb || '';
+        const meta = tile.dataset.meta || '';
+        const emoji = tile.dataset.emoji || '🎮';
+        const locked = tile.dataset.locked === '1';
+        heroTitle.innerHTML = title + ' <span class="en">' + en + '</span>';
+        heroBlurb.textContent = blurb;
+        heroMeta.textContent = meta;
+        coverEmoji.textContent = emoji;
+        if (locked) {
+          heroPlay.removeAttribute('href');
+          heroPlay.textContent = '即将开放';
+          heroPlay.style.pointerEvents = 'none';
+          heroPlay.style.opacity = '0.55';
+          hero.classList.remove('is-focus');
+        } else {
+          heroPlay.href = tile.getAttribute('href') || '#';
+          heroPlay.textContent = '开始游玩';
+          heroPlay.style.pointerEvents = '';
+          heroPlay.style.opacity = '';
+          hero.classList.add('is-focus');
+        }
+      }
+
+      function setFocus(i) {
+        focusIdx = (i + tiles.length) % tiles.length;
+        tiles.forEach((t, idx) => {
+          const on = idx === focusIdx;
+          t.classList.toggle('is-focused', on);
+          t.setAttribute('aria-selected', on ? 'true' : 'false');
+        });
+        const tile = tiles[focusIdx];
+        applyHero(tile);
+        tile.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+      }
+
+      tiles.forEach((t, i) => {
+        t.addEventListener('mouseenter', () => setFocus(i));
+        t.addEventListener('click', (e) => {
+          if (t.dataset.locked === '1') { e.preventDefault(); setFocus(i); }
+        });
+      });
+
+      document.addEventListener('keydown', (e) => {
+        if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
+        if (e.key === 'ArrowRight') { e.preventDefault(); setFocus(focusIdx + 1); }
+        else if (e.key === 'ArrowLeft') { e.preventDefault(); setFocus(focusIdx - 1); }
+        else if (e.key === 'Enter') {
+          const t = tiles[focusIdx];
+          if (t.dataset.locked === '1') return;
+          const href = t.getAttribute('href');
+          if (href) location.href = href;
+        }
+      });
+
+      applyHero(tiles[0]);
+    })();
+  </script>
 </body>
 </html>
