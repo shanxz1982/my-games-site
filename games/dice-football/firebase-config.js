@@ -1,14 +1,13 @@
 /**
  * Firebase config for global career leaderboard (Firestore).
- * Leave fields empty → CloudRecords stays local-only (offline OK).
- * Fill from Firebase Console → Project settings → Your apps → SDK snippet.
- * See ../../README.md for exact console steps and Firestore rules.
+ * Filled from Firebase Console web app SDK snippet.
  */
 window.FIREBASE_CONFIG = {
-  apiKey: "",
-  authDomain: "",
-  projectId: "",
-  storageBucket: "",
-  messagingSenderId: "",
-  appId: ""
+  apiKey: "AIzaSyBtccnvS26GvByUi-DM6sneE8Jnyce0j_s",
+  authDomain: "my-games-site-35a29.firebaseapp.com",
+  projectId: "my-games-site-35a29",
+  storageBucket: "my-games-site-35a29.firebasestorage.app",
+  messagingSenderId: "9999448457467",
+  appId: "1:9999448457467:web:559eadd55768ab4d17405e",
+  measurementId: "G-GFL9MPR6WC"
 };
