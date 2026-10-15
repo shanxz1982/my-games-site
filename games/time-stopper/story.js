@@ -8,9 +8,9 @@ const $ = (s, root) => (root || document).querySelector(s);
 const $$ = (s, root) => Array.from((root || document).querySelectorAll(s));
 
 const DIFFICULTY = {
-  easy:   { id: "easy",   label: "简单", noiseMin: 90, noiseMax: 320, hpMul: 0.85, atkMul: 0.9 },
-  normal: { id: "normal", label: "普通", noiseMin: 50, noiseMax: 200, hpMul: 1,    atkMul: 1 },
-  hard:   { id: "hard",   label: "困难", noiseMin: 20, noiseMax: 100, hpMul: 1.12, atkMul: 1.08 }
+  easy:   { id: "easy",   label: "简单", noiseMin: 0.09, noiseMax: 0.32, hpMul: 0.85, atkMul: 0.9 },
+  normal: { id: "normal", label: "普通", noiseMin: 0.05, noiseMax: 0.20, hpMul: 1,    atkMul: 1 },
+  hard:   { id: "hard",   label: "困难", noiseMin: 0.02, noiseMax: 0.10, hpMul: 1.12, atkMul: 1.08 }
 };
 
 const ITEM_DEFS = {
@@ -25,44 +25,44 @@ const CHAPTERS = [
     id: 1, title: "边陲的烽火",
     narrate: "王国边陲传来异变。年轻的勇者接过锈迹斑斑的剑，踏上营救被魔王掳走的公主之路。\n第一关：密林入口，一群哥布林挡路。\n——用 TIME STOPPER 的直觉，停在自己目标时间最近的那一帧。",
     enemy: { name: "哥布林斥候", emoji: "👺", hp: 42, atk: 9, def: 1, kind: "mob" },
-    targetMs: 500
+    targetSec: 5.00
   },
   {
     id: 2, title: "迷雾河谷",
     narrate: "穿过密林，河谷升起灰雾。石像鬼在断桥上嘶鸣。\n勇者稳住呼吸——计时一决，快一步则生。",
     enemy: { name: "石像鬼", emoji: "🗿", hp: 58, atk: 12, def: 3, kind: "mob" },
-    targetMs: 650
+    targetSec: 6.50
   },
   {
     id: 3, title: "中段首领 · 暗影骑士",
     narrate: "峡谷尽头立着黑甲骑士。他自称魔王先锋：\n「想救公主？先赢过我的心跳。」\n——中段首领战。",
     enemy: { name: "暗影骑士", emoji: "🖤", hp: 95, atk: 16, def: 5, kind: "boss" },
-    targetMs: 480,
+    targetSec: 4.80,
     midBoss: true
   },
   {
     id: 4, title: "熔岩回廊",
     narrate: "骑士倒下，道路通向灼热的熔岩回廊。火焰精灵成群扑来。\n背包里的符文隐隐发热——善用道具，方能活着走出地狱。",
     enemy: { name: "火焰精灵群", emoji: "🔥", hp: 72, atk: 14, def: 2, kind: "mob" },
-    targetMs: 420
+    targetSec: 4.20
   },
   {
     id: 5, title: "镜之迷宫",
     narrate: "魔王城堡外墙是无数镜子。分身敌军扰乱视线。\n目标时间变幻不定——专注，才能看见真实。",
     enemy: { name: "镜影刺客", emoji: "🪞", hp: 78, atk: 15, def: 3, kind: "mob" },
-    targetMs: 720
+    targetSec: 7.20
   },
   {
     id: 6, title: "王座之前",
     narrate: "王座厅大门半开。公主的呼喊隐约可闻。\n门卫巨魔拔出钉锤：「再近一步，骨头开花。」",
     enemy: { name: "门卫巨魔", emoji: "👹", hp: 105, atk: 17, def: 6, kind: "mob" },
-    targetMs: 550
+    targetSec: 5.50
   },
   {
     id: 7, title: "最终决战 · 营救公主",
     narrate: "魔王从阴影中现身，公主被锁在水晶牢中。\n「时间与勇气，都站在强者一边。」\n勇者举起剑——这是最后一战。",
     enemy: { name: "魔王", emoji: "😈", hp: 150, atk: 22, def: 8, kind: "boss" },
-    targetMs: 500,
+    targetSec: 5.00,
     finalBoss: true
   }
 ];
@@ -81,18 +81,17 @@ const Story = {
     playerRunning: false,
     start: 0,
     raf: 0,
-    duration: 1200,
-    playerMs: null,
-    enemyMs: null,
-    playerTargetMs: 500,
-    enemyTargetMs: 500,
-    enemyStopMs: null,
+    playerSec: null,
+    enemySec: null,
+    playerTargetSec: 5,
+    enemyTargetSec: 5,
+    enemyStopSec: null,
     playerStopped: false,
     enemyStopped: false,
     awaitingRerollConfirm: false
   },
   rewardTiming: {
-    running: false, start: 0, raf: 0, duration: 1200, targetMs: 500
+    running: false, start: 0, raf: 0, targetSec: 5
   },
   dmgFloatId: 0
 };
@@ -187,9 +186,13 @@ function setHpBar(barEl, textEl, hp, max) {
 }
 
 
-function fmtSec(ms) {
-  if (ms == null || !Number.isFinite(ms)) return "0.00";
-  return (Math.max(0, ms) / 1000).toFixed(2);
+function fmtSec(sec) {
+  if (sec == null || !Number.isFinite(sec)) return "0.00";
+  return Math.max(0, sec).toFixed(2);
+}
+
+function roundSec(sec) {
+  return Math.round(Math.max(0, sec) * 100) / 100;
 }
 
 function setText(id, value) {
@@ -327,21 +330,21 @@ function showNarration() {
 }
 
 function rollPlayerTarget(ch) {
-  let t = ch.targetMs;
+  let t = ch.targetSec;
   if (Story.difficulty === "hard") {
-    t += Math.round((Math.random() * 40) - 20);
+    t += (Math.random() * 0.40) - 0.20;
   }
-  return clamp(t, 280, Story.timing.duration - 280);
+  return roundSec(clamp(t, 3.00, 9.00));
 }
 
 function rollEnemyTarget(ch) {
-  if (ch.enemyTargetMs != null && Number.isFinite(ch.enemyTargetMs)) {
-    return clamp(Math.round(ch.enemyTargetMs), 280, 920);
+  if (ch.enemyTargetSec != null && Number.isFinite(ch.enemyTargetSec)) {
+    return roundSec(clamp(ch.enemyTargetSec, 3.00, 9.00));
   }
-  const base = ch.targetMs;
-  let offset = Math.round(Math.random() * 560 - 280);
-  if (offset === 0) offset = Math.random() < 0.5 ? -40 : 40;
-  return clamp(base + offset, 280, 920);
+  const base = ch.targetSec;
+  let offset = Math.random() * 5.60 - 2.80;
+  if (Math.abs(offset) < 0.05) offset = Math.random() < 0.5 ? -0.40 : 0.40;
+  return roundSec(clamp(base + offset, 3.00, 9.00));
 }
 
 function rollEnemyNoise() {
@@ -349,33 +352,21 @@ function rollEnemyNoise() {
   let minN = d.noiseMin;
   let maxN = d.noiseMax;
   if (Story.difficulty === "hard") {
-    const reduce = Math.min(Story.chapterIndex * 5, 40);
-    maxN = Math.max(minN + 10, maxN - reduce);
+    const reduce = Math.min(Story.chapterIndex * 0.05, 0.40);
+    maxN = Math.max(minN + 0.01, maxN - reduce);
   }
   const mag = minN + Math.random() * (maxN - minN);
   const sign = Math.random() < 0.5 ? -1 : 1;
-  return Math.round(sign * mag);
+  return roundSec(sign * mag);
 }
 
 function updateTargetUI() {
-  const p = Story.timing.playerTargetMs;
-  const e = Story.timing.enemyTargetMs;
-  const dur = Story.timing.duration;
+  const p = Story.timing.playerTargetSec;
+  const e = Story.timing.enemyTargetSec;
   const pEl = $("#storyPlayerTargetMs");
   const eEl = $("#storyEnemyTargetMs");
-  if (pEl) pEl.textContent = String(p);
-  if (eEl) eEl.textContent = String(e);
-  const mark = $("#storyMark");
-  const eMark = $("#storyEnemyMark");
-  if (mark) mark.style.left = (p / dur * 100) + "%";
-  if (eMark) eMark.style.left = (e / dur * 100) + "%";
-}
-
-function resetNeedles() {
-  const n = $("#storyNeedle");
-  const en = $("#storyEnemyNeedle");
-  if (n) n.style.left = "0%";
-  if (en) en.style.left = "0%";
+  if (pEl) pEl.textContent = fmtSec(p);
+  if (eEl) eEl.textContent = fmtSec(e);
 }
 
 function beginBattle() {
@@ -396,11 +387,11 @@ function beginBattle() {
     kind: ch.enemy.kind
   };
   cancelTimingAnim();
-  Story.timing.playerTargetMs = rollPlayerTarget(ch);
-  Story.timing.enemyTargetMs = rollEnemyTarget(ch);
-  Story.timing.playerMs = null;
-  Story.timing.enemyMs = null;
-  Story.timing.enemyStopMs = null;
+  Story.timing.playerTargetSec = rollPlayerTarget(ch);
+  Story.timing.enemyTargetSec = rollEnemyTarget(ch);
+  Story.timing.playerSec = null;
+  Story.timing.enemySec = null;
+  Story.timing.enemyStopSec = null;
   Story.timing.playerStopped = false;
   Story.timing.enemyStopped = false;
   Story.timing.active = false;
@@ -418,7 +409,6 @@ function beginBattle() {
   setHpBar($("#storyHeroHpBar"), $("#storyHeroHpText"), Story.hero.hp, Story.hero.maxHp);
   setHpBar($("#storyEnemyHpBar"), $("#storyEnemyHpText"), Story.enemy.hp, Story.enemy.maxHp);
   updateTargetUI();
-  resetNeedles();
   resetTimingDisplays();
   const cmp = $("#storyTargetCompare");
   if (cmp) cmp.textContent = "—";
@@ -434,8 +424,8 @@ function beginBattle() {
   updateBuffFlags();
   log(
     (ch.midBoss || ch.finalBoss ? "⚠ 首领战！ " : "") +
-    "你的目标 " + Story.timing.playerTargetMs + " ms · 敌方目标 " + Story.timing.enemyTargetMs +
-    " ms — 各自逼近自己的目标，误差差越大伤害越高。（" + d.label + "）"
+    "你的目标 " + fmtSec(Story.timing.playerTargetSec) + " 秒 · 敌方目标 " + fmtSec(Story.timing.enemyTargetSec) +
+    " 秒 — 各自逼近自己的目标，误差差越大伤害越高。（" + d.label + "）"
   );
 }
 
@@ -497,17 +487,16 @@ function tryMaybeCommit() {
   commitTurn();
 }
 
-function onEnemyAutoStop() {
+function onEnemyAutoStop(elapsedSec) {
   if (Story.timing.enemyStopped) return;
   Story.timing.enemyStopped = true;
-  Story.timing.enemyMs = Story.timing.enemyStopMs;
-  const en = $("#storyEnemyNeedle");
-  if (en) en.style.left = (Story.timing.enemyMs / Story.timing.duration * 100) + "%";
-  setText("storyEnemyTimer", fmtSec(Story.timing.enemyMs));
-  setText("storyEnemyStop", "停表 " + Story.timing.enemyMs + " ms");
+  const stopSec = elapsedSec != null ? elapsedSec : Story.timing.enemyStopSec;
+  Story.timing.enemySec = roundSec(stopSec);
+  setText("storyEnemyTimer", fmtSec(Story.timing.enemySec));
+  setText("storyEnemyStop", "停表 " + fmtSec(Story.timing.enemySec) + " 秒");
   setText("storyEnemyStatus", "已停 · 自动");
   if (!Story.timing.playerStopped) {
-    log("敌方已停表 " + Story.timing.enemyMs + " ms，等待你停表…");
+    log("敌方已停表 " + fmtSec(Story.timing.enemySec) + " 秒，等待你停表…");
   }
   tryMaybeCommit();
 }
@@ -518,32 +507,26 @@ function startTimer(fromReroll) {
   if (Story.timing.active && !fromReroll && !Story.timing.awaitingRerollConfirm) return;
   if (Story.timing.awaitingRerollConfirm && !fromReroll) return;
 
-  const duration = Story.timing.duration;
-  const needle = $("#storyNeedle");
-  const enemyNeedle = $("#storyEnemyNeedle");
-
   if (!fromReroll) {
     cancelTimingAnim();
-    Story.timing.playerMs = null;
-    Story.timing.enemyMs = null;
+    Story.timing.playerSec = null;
+    Story.timing.enemySec = null;
     Story.timing.playerStopped = false;
     Story.timing.enemyStopped = false;
     Story.timing.awaitingRerollConfirm = false;
     const noise = rollEnemyNoise();
-    Story.timing.enemyStopMs = Math.round(clamp(
-      Story.timing.enemyTargetMs + noise,
-      40,
-      duration - 40
+    Story.timing.enemyStopSec = roundSec(clamp(
+      Story.timing.enemyTargetSec + noise,
+      0.50,
+      12.00
     ));
-    resetNeedles();
     resetTimingDisplays();
     const cmp = $("#storyTargetCompare");
     if (cmp) cmp.textContent = "—";
   } else {
-    Story.timing.playerMs = null;
+    Story.timing.playerSec = null;
     Story.timing.playerStopped = false;
     Story.timing.awaitingRerollConfirm = false;
-    if (needle) needle.style.left = "0%";
     setText("storyPlayerTimer", "0.00");
     setText("storyPlayerStop", "停表 —");
     setText("storyPlayerStatus", "等待开始");
@@ -564,21 +547,17 @@ function startTimer(fromReroll) {
 
   const tick = (now) => {
     if (!Story.timing.active && !Story.timing.playerRunning) return;
-    const raw = now - Story.timing.start;
-    const elapsed = raw % duration;
+    const elapsed = (now - Story.timing.start) / 1000;
 
-    if (Story.timing.playerRunning && needle) {
-      needle.style.left = (elapsed / duration * 100) + "%";
+    if (Story.timing.playerRunning) {
       setText("storyPlayerTimer", fmtSec(elapsed));
     }
 
     if (!Story.timing.enemyStopped) {
-      if (raw >= Story.timing.enemyStopMs) {
-        onEnemyAutoStop();
-      } else if (enemyNeedle) {
-        const ePos = Math.min(raw, Story.timing.enemyStopMs);
-        enemyNeedle.style.left = (ePos / duration * 100) + "%";
-        setText("storyEnemyTimer", fmtSec(ePos));
+      if (elapsed >= Story.timing.enemyStopSec) {
+        onEnemyAutoStop(Story.timing.enemyStopSec);
+      } else {
+        setText("storyEnemyTimer", fmtSec(elapsed));
       }
     }
 
@@ -592,13 +571,11 @@ function startTimer(fromReroll) {
 function stopTimer(fromRerollConfirmPath) {
   if (!Story.timing.playerRunning) return;
   Story.timing.playerRunning = false;
-  const elapsed = Math.round((performance.now() - Story.timing.start) % Story.timing.duration);
-  Story.timing.playerMs = elapsed;
+  const elapsed = roundSec((performance.now() - Story.timing.start) / 1000);
+  Story.timing.playerSec = elapsed;
   Story.timing.playerStopped = true;
-  const needle = $("#storyNeedle");
-  if (needle) needle.style.left = (elapsed / Story.timing.duration * 100) + "%";
-  setText("storyPlayerTimer", fmtSec(Story.timing.playerMs));
-  setText("storyPlayerStop", "停表 " + Story.timing.playerMs + " ms");
+  setText("storyPlayerTimer", fmtSec(Story.timing.playerSec));
+  setText("storyPlayerStop", "停表 " + fmtSec(Story.timing.playerSec) + " 秒");
   setText("storyPlayerStatus", "已停表");
   $("#storyStopTimer").classList.add("hidden");
 
@@ -607,7 +584,7 @@ function stopTimer(fromRerollConfirmPath) {
     $("#storyRerollBtn").classList.remove("hidden");
     $("#storyStartTimer").classList.add("hidden");
     setText("storyPlayerStatus", "可重停或确认");
-    log("已停表 " + Story.timing.playerMs + " ms。可用「重停」或确认结算。");
+    log("已停表 " + fmtSec(Story.timing.playerSec) + " 秒。可用「重停」或确认结算。");
     const confirmBtn = $("#storyConfirmStop");
     if (confirmBtn) confirmBtn.classList.remove("hidden");
     if (Story.timing.enemyStopped) {
@@ -649,21 +626,22 @@ function confirmStopAfterRerollOption() {
 }
 
 function commitTurn() {
-  const pTarget = Story.timing.playerTargetMs;
-  const eTarget = Story.timing.enemyTargetMs;
-  const playerMs = Story.timing.playerMs;
-  const enemyMs = Story.timing.enemyMs;
+  const pTarget = Story.timing.playerTargetSec;
+  const eTarget = Story.timing.enemyTargetSec;
+  const playerSec = Story.timing.playerSec;
+  const enemySec = Story.timing.enemySec;
 
-  const pDist = Math.abs(playerMs - pTarget);
-  const eDist = Math.abs(enemyMs - eTarget);
-  const delta = Math.max(1, Math.round(Math.abs(pDist - eDist)));
+  const pDist = roundSec(Math.abs(playerSec - pTarget));
+  const eDist = roundSec(Math.abs(enemySec - eTarget));
+  // Damage from |pDist-eDist| in seconds → centiseconds for integer HP (same scale as old ms)
+  const delta = Math.max(1, Math.round(Math.abs(pDist - eDist) * 100));
 
   const cmp = $("#storyTargetCompare");
-  if (cmp) cmp.textContent = "你差 " + pDist + " · 敌差 " + eDist;
+  if (cmp) cmp.textContent = "你差 " + fmtSec(pDist) + " · 敌差 " + fmtSec(eDist);
 
   log(
-    "你停 " + playerMs + "ms / 目标 " + pTarget + "ms（差 " + pDist + "）· " +
-    "敌停 " + enemyMs + "ms / 目标 " + eTarget + "ms（差 " + eDist + "）"
+    "你停 " + fmtSec(playerSec) + "秒 / 目标 " + fmtSec(pTarget) + "秒（差 " + fmtSec(pDist) + "）· " +
+    "敌停 " + fmtSec(enemySec) + "秒 / 目标 " + fmtSec(eTarget) + "秒（差 " + fmtSec(eDist) + "）"
   );
 
   // Tie: no damage / skip turn
@@ -678,7 +656,7 @@ function commitTurn() {
 
   if (playerAttacks) {
     let dmg = delta;
-    const crit = pDist <= 28;
+    const crit = pDist <= 0.28;
     if (crit) dmg += 8;
     if (Story.buffs.double) {
       dmg *= 2;
@@ -689,7 +667,7 @@ function commitTurn() {
     setHpBar($("#storyEnemyHpBar"), $("#storyEnemyHpText"), Story.enemy.hp, Story.enemy.maxHp);
     spawnDmgNumber("enemy", dmg, crit ? "crit" : "hit");
     log(
-      "你发动攻击！误差差 " + Math.abs(pDist - eDist) + " → 造成 " + dmg + " 伤害" +
+      "你发动攻击！误差差 " + fmtSec(Math.abs(pDist - eDist)) + " → 造成 " + dmg + " 伤害" +
       (crit ? "（精准暴击！）" : ""),
       "story-win"
     );
@@ -704,7 +682,7 @@ function commitTurn() {
     setHpBar($("#storyHeroHpBar"), $("#storyHeroHpText"), Story.hero.hp, Story.hero.maxHp);
     spawnDmgNumber("hero", dmg, "hit");
     log(
-      Story.enemy.name + " 抢先出手！误差差 " + Math.abs(pDist - eDist) + " → 你受到 " + dmg + " 伤害",
+      Story.enemy.name + " 抢先出手！误差差 " + fmtSec(Math.abs(pDist - eDist)) + " → 你受到 " + dmg + " 伤害",
       "story-lose"
     );
   }
@@ -727,18 +705,17 @@ function commitTurn() {
 function scheduleNextTurn() {
   setTimeout(() => {
     const ch = CHAPTERS[Story.chapterIndex];
-    Story.timing.playerTargetMs = rollPlayerTarget(ch);
-    Story.timing.enemyTargetMs = rollEnemyTarget(ch);
-    Story.timing.playerMs = null;
-    Story.timing.enemyMs = null;
-    Story.timing.enemyStopMs = null;
+    Story.timing.playerTargetSec = rollPlayerTarget(ch);
+    Story.timing.enemyTargetSec = rollEnemyTarget(ch);
+    Story.timing.playerSec = null;
+    Story.timing.enemySec = null;
+    Story.timing.enemyStopSec = null;
     Story.timing.playerStopped = false;
     Story.timing.enemyStopped = false;
     Story.timing.active = false;
     Story.timing.playerRunning = false;
     Story.timing.awaitingRerollConfirm = false;
     updateTargetUI();
-    resetNeedles();
     resetTimingDisplays();
     const cmp2 = $("#storyTargetCompare");
     if (cmp2) cmp2.textContent = "—";
@@ -748,7 +725,7 @@ function scheduleNextTurn() {
     const confirmBtn2 = $("#storyConfirmStop");
     if (confirmBtn2) confirmBtn2.classList.add("hidden");
     renderBag();
-    log("—— 下一回合 · 你 " + Story.timing.playerTargetMs + "ms / 敌 " + Story.timing.enemyTargetMs + "ms ——");
+    log("—— 下一回合 · 你 " + fmtSec(Story.timing.playerTargetSec) + "秒 / 敌 " + fmtSec(Story.timing.enemyTargetSec) + "秒 ——");
   }, 420);
 }
 
@@ -776,13 +753,12 @@ function openReward(afterFinal) {
   Story._afterFinalReward = !!afterFinal;
   Story._rewardLocked = false;
   Story.hero.hp = Math.min(Story.hero.maxHp, Story.hero.hp + 15);
-  const targets = [420, 480, 500, 550, 600, 666, 720];
-  Story.rewardTiming.targetMs = targets[Story.chapterIndex % targets.length];
+  const targets = [4.20, 4.80, 5.00, 5.50, 6.00, 6.66, 7.20];
+  Story.rewardTiming.targetSec = targets[Story.chapterIndex % targets.length];
   Story.rewardTiming.running = false;
   if (Story.rewardTiming.raf) cancelAnimationFrame(Story.rewardTiming.raf);
-  $("#storyLootTargetMs").textContent = String(Story.rewardTiming.targetMs);
-  $("#storyLootMark").style.left = (Story.rewardTiming.targetMs / Story.rewardTiming.duration * 100) + "%";
-  $("#storyLootNeedle").style.left = "0%";
+  $("#storyLootTargetMs").textContent = fmtSec(Story.rewardTiming.targetSec);
+  setText("storyLootTimer", "0.00");
 }
 
 function lockRewardChoices() {
@@ -794,10 +770,10 @@ function lockRewardChoices() {
   $("#storyRewardContinue").classList.remove("hidden");
 }
 
-function itemFromAccuracy(diff) {
-  if (diff <= 25) return "double";
-  if (diff <= 50) return "reroll";
-  if (diff <= 90) return "shield";
+function itemFromAccuracy(diffSec) {
+  if (diffSec <= 0.25) return "double";
+  if (diffSec <= 0.50) return "reroll";
+  if (diffSec <= 0.90) return "shield";
   return "heal";
 }
 
@@ -808,12 +784,11 @@ function startLootTiming() {
   $("#storyLootStartBtn").classList.add("hidden");
   $("#storyLootStopBtn").classList.remove("hidden");
   $$(".story-stat-pick").forEach((b) => { b.disabled = true; });
-  const needle = $("#storyLootNeedle");
-  const duration = Story.rewardTiming.duration;
+  setText("storyLootTimer", "0.00");
   const tick = (now) => {
     if (!Story.rewardTiming.running) return;
-    const elapsed = (now - Story.rewardTiming.start) % duration;
-    if (needle) needle.style.left = (elapsed / duration * 100) + "%";
+    const elapsed = (now - Story.rewardTiming.start) / 1000;
+    setText("storyLootTimer", fmtSec(elapsed));
     Story.rewardTiming.raf = requestAnimationFrame(tick);
   };
   Story.rewardTiming.raf = requestAnimationFrame(tick);
@@ -823,14 +798,15 @@ function stopLootTiming() {
   if (!Story.rewardTiming.running) return;
   Story.rewardTiming.running = false;
   cancelAnimationFrame(Story.rewardTiming.raf);
-  const elapsed = Math.round((performance.now() - Story.rewardTiming.start) % Story.rewardTiming.duration);
-  const target = Story.rewardTiming.targetMs;
-  const diff = Math.abs(elapsed - target);
+  const elapsed = roundSec((performance.now() - Story.rewardTiming.start) / 1000);
+  const target = Story.rewardTiming.targetSec;
+  const diff = roundSec(Math.abs(elapsed - target));
   const itemId = itemFromAccuracy(diff);
   const def = ITEM_DEFS[itemId];
   Story.bag.push(itemId);
+  setText("storyLootTimer", fmtSec(elapsed));
   $("#storyRewardResult").textContent =
-    "停表 " + elapsed + " ms（差 " + diff + "）→ " + def.emoji + " " + def.name;
+    "停表 " + fmtSec(elapsed) + " 秒（差 " + fmtSec(diff) + "）→ " + def.emoji + " " + def.name;
   $("#storyRewardDetail").textContent = def.desc + " 已放入背包";
   $("#storyRewardDetail").classList.remove("hidden");
   saveStory();
