@@ -33,7 +33,7 @@ my-games-site/
 
 - 英灵殿：本地 localStorage + 云端 Firestore 集合 `timestopper_hall`（本地 / 云端 / 合并）
 - 挑战模式：每关记录尝试次数；通关按误差与尝试评分；全通总评可提交云端
-- 门户与各游戏页预留 AdSense 玻璃广告位（`data-ad-slot`，尚未接入真实广告）
+- AdSense 已接入（`ca-pub-5858501694829530`）：门户与各游戏页加载 adsbygoogle.js，广告位为 auto 响应式单元；仍须 AdSense 站点审核通过，且日后可为各位创建显示广告单元以填入具体 `data-ad-slot` ID
 
 ### TIME STOPPER · 故事模式
 

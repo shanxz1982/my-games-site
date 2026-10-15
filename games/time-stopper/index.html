@@ -424,25 +424,25 @@
             color: #c4b5fd; border: 1px solid rgba(167, 139, 250, 0.4);
         }
 
-        /* AdSense-ready placeholders (no real ads / no publisher script yet) */
+        /* AdSense glass wrappers (reserve space; real <ins> inside) */
         .ad-slot {
             position: relative; display: flex; align-items: center; justify-content: center;
             margin: 10px auto; border-radius: 14px;
             background: rgba(12, 18, 40, 0.45);
-            border: 1px dashed rgba(120, 220, 255, 0.28);
+            border: 1px solid rgba(120, 220, 255, 0.22);
             backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
             color: var(--muted, #8ba3c7); font-size: 0.75rem; letter-spacing: 0.04em;
             text-align: center; overflow: hidden; max-width: 100%; z-index: 5;
-            pointer-events: none;
+            pointer-events: auto;
         }
-        .ad-slot::before { content: attr(data-ad-label); opacity: 0.75; padding: 0 10px; }
-        .ad-slot--banner { width: min(728px, 94vw); min-height: 56px; max-height: 80px; }
-        .ad-slot--footer { width: min(728px, 94vw); min-height: 50px; max-height: 72px; margin: 16px auto 20px; }
-        .ad-slot--sidebar { width: min(300px, 92vw); min-height: 120px; max-height: 200px; }
+        .ad-slot ins.adsbygoogle { display: block; width: 100%; }
+        .ad-slot--banner { width: min(728px, 94vw); min-height: 90px; }
+        .ad-slot--footer { width: min(728px, 94vw); min-height: 90px; margin: 16px auto 20px; }
+        .ad-slot--sidebar { width: min(300px, 92vw); min-height: 250px; }
         .ad-rail { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin: 12px 0; }
         @media (max-width: 640px) {
-            .ad-slot--banner, .ad-slot--footer { min-height: 44px; max-height: 58px; font-size: 0.68rem; }
-            .ad-slot--sidebar { min-height: 80px; max-height: 110px; }
+            .ad-slot--banner, .ad-slot--footer { min-height: 66px; font-size: 0.68rem; }
+            .ad-slot--sidebar { min-height: 140px; }
         }
 
         #confetti { position: fixed; inset: 0; pointer-events: none; z-index: 50; }
@@ -782,6 +782,7 @@
 
 
     </style>
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5858501694829530" crossorigin="anonymous"></script>
 </head>
 <body>
     <div class="bg-mesh" aria-hidden="true"></div>
@@ -793,15 +794,14 @@
     <canvas id="confetti"></canvas>
     <a class="hub-back" href="../../">← 返回游戏站</a>
     
-    <!--
-      AdSense placeholders — fill ca-pub-YOUR_PUBLISHER_ID + data-ad-slot when ready.
-      Do not load adsbygoogle.js until publisher ID is approved.
-    -->
-    <div class="ad-slot ad-slot--banner"
-         data-ad-slot="timestopper-top-banner"
-         data-ad-client="ca-pub-YOUR_PUBLISHER_ID"
-         data-ad-label="广告位 · 顶栏横幅 (AdSense)"
-         role="complementary" aria-label="广告位预留"></div>
+    <div class="ad-slot ad-slot--banner" role="complementary" aria-label="广告 · 顶栏">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-5858501694829530"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+    </div>
 <button class="mute-toggle" id="muteBtn" type="button" title="静音开关" aria-label="静音开关">🔊</button>
 
     <div id="startScreen">
@@ -2268,17 +2268,23 @@
     </script>
 
     <div class="ad-rail">
-      <div class="ad-slot ad-slot--sidebar"
-           data-ad-slot="timestopper-side"
-           data-ad-client="ca-pub-YOUR_PUBLISHER_ID"
-           data-ad-label="广告位 · 侧栏 / 底部 (AdSense)"
-           role="complementary" aria-label="广告位预留"></div>
+      <div class="ad-slot ad-slot--sidebar" role="complementary" aria-label="广告 · 侧栏">
+        <ins class="adsbygoogle"
+             style="display:block"
+             data-ad-client="ca-pub-5858501694829530"
+             data-ad-format="auto"
+             data-full-width-responsive="true"></ins>
+        <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+      </div>
     </div>
-    <div class="ad-slot ad-slot--footer"
-         data-ad-slot="timestopper-bottom-banner"
-         data-ad-client="ca-pub-YOUR_PUBLISHER_ID"
-         data-ad-label="广告位 · 底栏横幅 (AdSense)"
-         role="complementary" aria-label="广告位预留"></div>
+    <div class="ad-slot ad-slot--footer" role="complementary" aria-label="广告 · 底栏">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-5858501694829530"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+    </div>
 
     <script src="firebase-config.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
