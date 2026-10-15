@@ -4,6 +4,7 @@
 
 const STORY_KEY = "timeStopperStory_v2";
 const STORY_KEY_OLD = "timeStopperStory_v1";
+const PORTRAIT_VER = "8bit1";
 const $ = (s, root) => (root || document).querySelector(s);
 const $$ = (s, root) => Array.from((root || document).querySelectorAll(s));
 
@@ -419,8 +420,9 @@ function setPortraitArt(el, artPath, emojiFallback) {
   if (!el) return;
   const fallback = emojiFallback || "👾";
   if (artPath) {
+    const src = artPath + (artPath.indexOf("?") >= 0 ? "&" : "?") + "v=" + PORTRAIT_VER;
     el.innerHTML =
-      '<img class="story-portrait-img" src="' + artPath + '" alt="" ' +
+      '<img class="story-portrait-img" src="' + src + '" alt="" ' +
       'onerror="this.style.display=\'none\';this.parentNode.textContent=\'' + fallback + '\';" />';
   } else {
     el.textContent = fallback;
