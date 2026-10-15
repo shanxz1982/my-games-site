@@ -1,0 +1,908 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>皇家扑克赛马 (Royal Poker Derby)</title>
+    <meta name="description" content="皇家扑克赛马 Royal Poker Derby — 花色赛马 · 翻牌前进 · 多人下注">
+    <style>
+        :root {
+            --table-color: #2d5e38;
+            --felt-texture: repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0,0,0,0.05) 10px, rgba(0,0,0,0.05) 20px);
+            --card-width: 60px;
+            --card-height: 84px;
+            --gold: #ffd700;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #1a1a1a;
+            color: white;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        /* --- UI Screens --- */
+        .screen {
+            display: none;
+            width: 100%;
+            max-width: 1000px;
+            padding: 20px;
+            box-sizing: border-box;
+            text-align: center;
+        }
+
+        .screen.active {
+            display: block;
+        }
+
+        h1 { text-shadow: 2px 2px 4px #000; color: var(--gold); margin-bottom: 10px; }
+        h2 { border-bottom: 2px solid var(--gold); display: inline-block; padding-bottom: 5px; }
+
+        button {
+            background: linear-gradient(to bottom, #ffecb3, #ffc107);
+            border: 2px solid #b38f00;
+            border-radius: 8px;
+            padding: 10px 20px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+            transition: transform 0.1s;
+        }
+        button:hover { transform: scale(1.05); filter: brightness(1.1); }
+        button:disabled { filter: grayscale(1); cursor: not-allowed; }
+        button.secondary { background: #555; color: white; border-color: #333; }
+
+        .panel {
+            background: rgba(0, 0, 0, 0.6);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px solid #555;
+        }
+
+        /* --- Setup Screen --- */
+        .player-setup-row {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 10px;
+            align-items: center;
+        }
+        input[type="text"], input[type="number"] {
+            padding: 8px;
+            border-radius: 4px;
+            border: none;
+        }
+        select { padding: 8px; border-radius: 4px; }
+
+        /* --- Betting Screen --- */
+        .betting-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        .player-bet-card {
+            background: #333;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 5px solid #777;
+        }
+        .suit-btn {
+            font-size: 24px;
+            width: 50px;
+            height: 50px;
+            margin: 2px;
+            background: white;
+            border: 1px solid #ccc;
+        }
+        .suit-btn.selected {
+            box-shadow: 0 0 10px var(--gold);
+            border-color: var(--gold);
+            transform: scale(1.1);
+        }
+
+        /* --- Race Screen --- */
+        #game-board {
+            background-color: var(--table-color);
+            background-image: var(--felt-texture);
+            border-radius: 20px;
+            border: 8px solid #3e2723;
+            box-shadow: inset 0 0 50px rgba(0,0,0,0.8);
+            position: relative;
+            padding: 20px;
+            margin: 0 auto;
+            width: 100%;
+            overflow-x: auto;
+            min-height: 600px;
+            display: flex;
+            flex-direction: row;
+        }
+
+        /* The Layout: Left (Track), Right (Decks & Info) */
+        .track-area {
+            flex: 3;
+            display: flex;
+            justify-content: center;
+            position: relative;
+            padding-right: 60px; /* Space for side cards */
+        }
+
+        .controls-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            align-items: center;
+            border-left: 2px solid rgba(255,255,255,0.1);
+            padding-left: 20px;
+        }
+
+        /* Lanes */
+        .lane {
+            width: var(--card-width);
+            margin: 0 10px;
+            position: relative;
+            height: 100%;
+            border-right: 1px dashed rgba(255,255,255,0.2);
+        }
+        .lane:last-child { border-right: none; }
+        
+        .finish-line {
+            position: absolute;
+            top: 20px; /* Adjust based on track length logic */
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: repeating-linear-gradient(90deg, white, white 10px, black 10px, black 20px);
+            z-index: 1;
+        }
+
+        /* Cards */
+        .card {
+            width: var(--card-width);
+            height: var(--card-height);
+            background: white;
+            border-radius: 6px;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            position: absolute;
+            transition: all 0.6s cubic-bezier(0.25, 0.8, 0.25, 1);
+            user-select: none;
+        }
+
+        .card.red { color: #d32f2f; }
+        .card.black { color: #212121; }
+        
+        /* Face Down Card Style */
+        .card.back {
+            background: repeating-linear-gradient(
+                45deg,
+                #1565c0,
+                #1565c0 10px,
+                #0d47a1 10px,
+                #0d47a1 20px
+            );
+            border: 2px solid white;
+        }
+        .card.back::after {
+            content: "⚜";
+            color: rgba(255,255,255,0.5);
+            font-size: 30px;
+        }
+
+        /* Specific Card Positions */
+        .horse {
+            z-index: 10;
+        }
+
+        .side-track-container {
+            position: absolute;
+            right: 0;
+            top: 0;
+            height: 100%;
+            width: var(--card-width);
+            display: flex;
+            flex-direction: column-reverse; /* Start from bottom */
+            align-items: center;
+        }
+        
+        /* Draw Piles */
+        .pile-container {
+            width: var(--card-width);
+            height: var(--card-height);
+            position: relative;
+            margin-bottom: 20px;
+        }
+        .flipped-card-display {
+            font-size: 40px;
+            font-weight: bold;
+            height: 120px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: rgba(0,0,0,0.3);
+            border-radius: 10px;
+            width: 100%;
+        }
+
+        /* Commentary Box */
+        #commentary {
+            width: 100%;
+            height: 60px;
+            background: rgba(0,0,0,0.8);
+            border-top: 2px solid var(--gold);
+            color: #fff;
+            padding: 10px;
+            font-size: 14px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            text-align: left;
+        }
+
+        /* Scoreboard */
+        table.score-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        table.score-table th, table.score-table td {
+            border: 1px solid #555;
+            padding: 8px;
+        }
+        table.score-table th { background: #444; }
+
+        /* Helpers */
+        .suit-spade, .suit-club { color: black; }
+        .suit-heart, .suit-diamond { color: red; }
+        
+        /* Animation classes */
+        .shake { animation: shake 0.5s; }
+        @keyframes shake {
+            0% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            50% { transform: translateX(5px); }
+            75% { transform: translateX(-5px); }
+            100% { transform: translateX(0); }
+        }
+
+        /* Hub back + AdSense (light, non-layout-breaking) */
+        .hub-back {
+            position: fixed;
+            top: 14px; left: 14px; z-index: 300;
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 8px 14px; font-size: 0.82rem; font-weight: 600;
+            color: #ffd700; text-decoration: none;
+            background: rgba(0,0,0,0.55); border: 1px solid rgba(255,215,0,0.35);
+            border-radius: 999px;
+            backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+            transition: border-color 0.2s, box-shadow 0.2s, transform 0.15s;
+        }
+        .hub-back:hover {
+            border-color: rgba(255,215,0,0.7);
+            box-shadow: 0 0 18px rgba(255,215,0,0.25);
+            transform: translateY(-1px);
+        }
+        .ad-slot {
+            position: relative; display: flex; align-items: center; justify-content: center;
+            margin: 10px auto; border-radius: 14px;
+            background: rgba(0,0,0,0.45);
+            border: 1px solid rgba(255,215,0,0.22);
+            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            color: #aaa; font-size: 0.75rem; letter-spacing: 0.04em;
+            text-align: center; overflow: hidden; max-width: 100%; z-index: 5;
+            pointer-events: auto;
+        }
+        .ad-slot ins.adsbygoogle { display: block; width: 100%; }
+        .ad-slot--banner { width: min(728px, 94vw); min-height: 90px; }
+        .ad-slot--footer { width: min(728px, 94vw); min-height: 90px; margin: 16px auto 24px; }
+        @media (max-width: 640px) {
+            .ad-slot--banner, .ad-slot--footer { min-height: 66px; font-size: 0.68rem; }
+            .hub-back { font-size: 0.75rem; padding: 7px 11px; }
+        }
+    </style>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5858501694829530" crossorigin="anonymous"></script>
+</head>
+<body>
+    <a class="hub-back" href="../../">← 返回游戏站</a>
+    <div class="ad-slot ad-slot--banner" role="complementary" aria-label="广告 · 顶栏">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-5858501694829530"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+    </div>
+
+
+    <!-- SCREEN 1: SETUP -->
+    <div id="setup-screen" class="screen active">
+        <h1>🏆 皇家扑克赛马 🏆</h1>
+        <div class="panel">
+            <h3>比赛设置</h3>
+            <label>赛道长度 (牌数): <input type="number" id="track-length" value="7" min="3" max="10"></label>
+            <br><br>
+            <label>玩家人数: <select id="player-count" onchange="updatePlayerInputs()">
+                <option value="2">2人</option>
+                <option value="3">3人</option>
+                <option value="4" selected>4人</option>
+                <option value="5">5人</option>
+                <option value="6">6人</option>
+            </select></label>
+            
+            <div id="players-config" style="margin-top:20px;">
+                <!-- JS will populate this -->
+            </div>
+        </div>
+        <button onclick="goToBetting()">下一步：下注</button>
+    </div>
+
+    <!-- SCREEN 2: BETTING -->
+    <div id="betting-screen" class="screen">
+        <h1>🎲 下注阶段 🎲</h1>
+        <p>请每位玩家选择心仪的马匹并下注。</p>
+        <div id="betting-area" class="betting-grid">
+            <!-- JS will populate -->
+        </div>
+        <br>
+        <button class="secondary" onclick="resetGame()">重置</button>
+        <button onclick="startRace()">开始比赛！</button>
+    </div>
+
+    <!-- SCREEN 3: RACE -->
+    <div id="race-screen" class="screen" style="max-width: 1200px;">
+        <div style="display:flex; justify-content:space-between; width:100%; margin-bottom:10px;">
+            <h2>赛况直播</h2>
+            <div>
+                <button id="draw-btn" onclick="drawCard()">翻牌 (Draw)</button>
+                <button id="auto-btn" class="secondary" onclick="toggleAuto()">自动演示</button>
+            </div>
+        </div>
+
+        <div id="game-board">
+            <div class="track-area" id="track-container">
+                <!-- Lanes and Side Cards generated by JS -->
+            </div>
+            
+            <div class="controls-area">
+                <div style="text-align:center;">
+                    <small>剩余牌堆</small>
+                    <div class="pile-container">
+                        <div class="card back" style="top:0; left:0;"></div>
+                        <div class="card back" style="top:-2px; left:-2px;"></div>
+                        <div class="card back" style="top:-4px; left:-4px;"></div>
+                    </div>
+                </div>
+
+                <div style="text-align:center; width: 100%;">
+                    <small>最新翻牌</small>
+                    <div id="current-card-display" class="flipped-card-display">
+                        -
+                    </div>
+                </div>
+
+                <div class="panel" style="width:100%; flex:1;">
+                    <h4>当前排名</h4>
+                    <div id="live-ranking" style="text-align:left; font-size:14px;"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="commentary">欢迎来到皇家赛马场！比赛即将开始...</div>
+    </div>
+
+    <!-- SCREEN 4: RESULTS -->
+    <div id="result-screen" class="screen">
+        <h1>🏁 比赛结束 🏁</h1>
+        <h2 id="winner-announce" style="color: var(--gold); font-size: 2em;"></h2>
+        
+        <div class="panel">
+            <h3>本局结算</h3>
+            <div id="payout-details"></div>
+        </div>
+
+        <div class="panel">
+            <h3>总积分榜</h3>
+            <table class="score-table">
+                <thead><tr><th>玩家</th><th>类型</th><th>总筹码</th></tr></thead>
+                <tbody id="scoreboard-body"></tbody>
+            </table>
+        </div>
+
+        <button onclick="setupNextRound()">下一轮比赛</button>
+        <button class="secondary" onclick="location.reload()">彻底重来</button>
+    </div>
+
+<script>
+    /** 
+     * Constants & Config 
+     */
+    const SUITS = {
+        'spade': { symbol: '♠', color: 'black', name: '黑桃' },
+        'heart': { symbol: '♥', color: 'red', name: '红桃' },
+        'club': { symbol: '♣', color: 'black', name: '梅花' },
+        'diamond': { symbol: '♦', color: 'red', name: '方块' }
+    };
+    const SUIT_KEYS = ['spade', 'heart', 'club', 'diamond'];
+    
+    // Game State
+    let state = {
+        players: [],
+        deck: [],
+        trackLength: 7,
+        horses: {}, // { spade: position, ... }
+        sideCards: [], // { card: obj, flipped: bool, position: index }
+        raceOver: false,
+        winner: null,
+        autoInterval: null,
+        roundCount: 0
+    };
+
+    /**
+     * Initialization Logic
+     */
+    function init() {
+        updatePlayerInputs();
+    }
+
+    function updatePlayerInputs() {
+        const count = document.getElementById('player-count').value;
+        const container = document.getElementById('players-config');
+        container.innerHTML = '';
+        
+        for (let i = 0; i < count; i++) {
+            const div = document.createElement('div');
+            div.className = 'player-setup-row';
+            div.innerHTML = `
+                <span>玩家 ${i+1}:</span>
+                <input type="text" id="p${i}-name" value="Player ${i+1}" style="width:100px;">
+                <select id="p${i}-type">
+                    <option value="human">真人</option>
+                    <option value="cpu" ${i>0 ? 'selected' : ''}>电脑</option>
+                </select>
+            `;
+            container.appendChild(div);
+        }
+    }
+
+    function createDeck() {
+        const deck = [];
+        const values = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q']; // No K, K are horses
+        SUIT_KEYS.forEach(suit => {
+            values.forEach(val => {
+                deck.push({ suit, value: val });
+            });
+        });
+        return shuffle(deck);
+    }
+
+    function shuffle(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+    }
+
+    /**
+     * Phase Transitions
+     */
+    function switchScreen(id) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+    }
+
+    function goToBetting() {
+        // Init players if first round
+        if (state.roundCount === 0) {
+            state.players = [];
+            const count = document.getElementById('player-count').value;
+            for (let i = 0; i < count; i++) {
+                state.players.push({
+                    id: i,
+                    name: document.getElementById(`p${i}-name`).value,
+                    type: document.getElementById(`p${i}-type`).value,
+                    balance: 1000,
+                    bet: 0,
+                    horse: null
+                });
+            }
+            state.trackLength = parseInt(document.getElementById('track-length').value);
+        }
+
+        renderBettingUI();
+        switchScreen('betting-screen');
+    }
+
+    function renderBettingUI() {
+        const container = document.getElementById('betting-area');
+        container.innerHTML = '';
+
+        state.players.forEach(p => {
+            // CPU logic: Auto bet if CPU
+            if (p.type === 'cpu') {
+                p.horse = SUIT_KEYS[Math.floor(Math.random() * 4)];
+                p.bet = 100; // Fixed bet for simplicity or random: Math.floor(Math.random() * 5 + 1) * 50;
+            } else {
+                // Reset previous round choice
+                p.horse = null;
+                p.bet = 100;
+            }
+
+            const div = document.createElement('div');
+            div.className = 'player-bet-card';
+            div.style.borderLeftColor = p.type === 'cpu' ? '#f44336' : '#4caf50';
+            
+            let html = `<strong>${p.name}</strong> (${p.type === 'cpu' ? '电脑' : '真人'})<br>`;
+            html += `余额: $${p.balance}<br>`;
+            
+            if (p.type === 'human') {
+                html += `<div>选择马匹: <br>`;
+                SUIT_KEYS.forEach(suit => {
+                    html += `<button class="suit-btn suit-${suit}" onclick="selectHorse(${p.id}, '${suit}', this)">${SUITS[suit].symbol}</button>`;
+                });
+                html += `</div>`;
+                html += `下注: <input type="number" id="bet-${p.id}" value="100" min="10" max="${p.balance}" style="width:60px;">`;
+            } else {
+                html += `已准备好 (下注 $${p.bet} on ${SUITS[p.horse].symbol})`;
+            }
+            div.innerHTML = html;
+            container.appendChild(div);
+        });
+    }
+
+    function selectHorse(playerId, suit, btn) {
+        state.players[playerId].horse = suit;
+        // Visual toggle
+        const parent = btn.parentElement;
+        Array.from(parent.children).forEach(c => c.classList.remove('selected'));
+        btn.classList.add('selected');
+    }
+
+    function startRace() {
+        // Validate inputs
+        for (let p of state.players) {
+            if (p.type === 'human') {
+                const betInput = document.getElementById(`bet-${p.id}`);
+                p.bet = parseInt(betInput.value);
+                if (!p.horse) { alert(`${p.name} 还没选马！`); return; }
+                if (p.bet > p.balance || p.bet <= 0) { alert(`${p.name} 下注金额无效！`); return; }
+            }
+            p.balance -= p.bet; // Deduct immediately
+        }
+
+        // Initialize Race State
+        state.deck = createDeck();
+        state.raceOver = false;
+        state.winner = null;
+        SUIT_KEYS.forEach(s => state.horses[s] = 0); // Start at 0
+        state.sideCards = [];
+        
+        // Draw side cards (Track)
+        for (let i = 1; i <= state.trackLength; i++) {
+            state.sideCards.push({
+                card: state.deck.pop(),
+                flipped: false,
+                position: i // The position index on the track
+            });
+        }
+
+        buildRaceTrackUI();
+        switchScreen('race-screen');
+        logCommentary("比赛开始！4匹骏马蓄势待发！");
+        updatePositions();
+    }
+
+    /**
+     * Core Race Logic
+     */
+    function buildRaceTrackUI() {
+        const container = document.getElementById('track-container');
+        container.innerHTML = '';
+
+        // 1. Create Lanes for Horses
+        SUIT_KEYS.forEach((suit, index) => {
+            const lane = document.createElement('div');
+            lane.className = 'lane';
+            lane.id = `lane-${suit}`;
+            
+            // Add King (Horse)
+            const horse = document.createElement('div');
+            horse.className = `card horse ${SUITS[suit].color === 'red' ? 'red' : 'black'}`;
+            horse.innerHTML = `${SUITS[suit].symbol} K`;
+            horse.id = `horse-${suit}`;
+            // Initial Position: Bottom
+            horse.style.bottom = '0px';
+            
+            lane.appendChild(horse);
+            container.appendChild(lane);
+        });
+
+        // 2. Create Side Track (The setbacks)
+        const sideContainer = document.createElement('div');
+        sideContainer.className = 'side-track-container';
+        
+        // Calculate step height dynamically
+        // Total height approx 600px. Track length N. Steps = N + 2 (Start + Finish buffer)
+        // But for visual logic: Bottom is 0. 
+        
+        state.sideCards.forEach((item, index) => {
+            const cardDiv = document.createElement('div');
+            cardDiv.className = 'card back';
+            cardDiv.id = `side-card-${index}`;
+            // We set bottom position based on calculation in updatePositions
+            cardDiv.style.position = 'absolute';
+            cardDiv.style.right = '0';
+            
+            sideContainer.appendChild(cardDiv);
+        });
+        
+        container.appendChild(sideContainer);
+        
+        // Add Finish Line visual
+        const finishLine = document.createElement('div');
+        finishLine.className = 'finish-line';
+        container.appendChild(finishLine);
+    }
+
+    function getStepHeight() {
+        const trackHeight = document.getElementById('track-container').clientHeight;
+        // Total steps = TrackLength + 1 (Finish) + 1 (Start padding)
+        return (trackHeight - 100) / (state.trackLength + 1); 
+    }
+
+    function updatePositions() {
+        const stepHeight = getStepHeight();
+        
+        // Update Horses
+        SUIT_KEYS.forEach(suit => {
+            const pos = state.horses[suit];
+            const el = document.getElementById(`horse-${suit}`);
+            el.style.bottom = `${pos * stepHeight + 10}px`;
+        });
+
+        // Update Side Cards positions
+        state.sideCards.forEach((item, index) => {
+            const el = document.getElementById(`side-card-${index}`);
+            // Side cards represent the hurdles at pos 1, 2, 3...
+            // Visual position should be between step N and N+1? 
+            // The rule: "Crossed a face-down card". So card is at specific Y.
+            // Let's place side card at position index.
+            el.style.bottom = `${(item.position) * stepHeight + 10}px`;
+            
+            if (item.flipped) {
+                el.className = `card ${SUITS[item.card.suit].color}`;
+                el.innerHTML = `${SUITS[item.card.suit].symbol}${item.card.value}`;
+            }
+        });
+
+        // Update Finish Line
+        const finishLine = document.querySelector('.finish-line');
+        finishLine.style.bottom = `${(state.trackLength + 1) * stepHeight + 10}px`;
+        finishLine.style.top = 'auto'; // Reset top from CSS
+    }
+
+    function drawCard() {
+        if (state.raceOver) return;
+
+        const card = state.deck.pop();
+        if (!card) {
+            logCommentary("牌堆没牌了！平局！（理论上不应发生）");
+            return;
+        }
+
+        // Show drawn card
+        const display = document.getElementById('current-card-display');
+        display.innerHTML = `<span style="color:${SUITS[card.suit].color}">${SUITS[card.suit].symbol} ${card.value}</span>`;
+        display.className = "flipped-card-display shake";
+        setTimeout(() => display.classList.remove('shake'), 500);
+
+        // Move Horse
+        state.horses[card.suit]++;
+        logCommentary(`${SUITS[card.suit].name} 前进一格！`);
+        
+        updatePositions();
+        updateRanking();
+        
+        // Check for Win
+        if (state.horses[card.suit] > state.trackLength) {
+            handleWin(card.suit);
+            return;
+        }
+
+        // Check Setback Trigger
+        checkSetback();
+    }
+
+    function checkSetback() {
+        // Logic: Find the lowest position among all horses
+        let minPos = 999;
+        SUIT_KEYS.forEach(s => minPos = Math.min(minPos, state.horses[s]));
+
+        // Check each side card
+        state.sideCards.forEach((side, index) => {
+            // If card is not flipped AND all horses have passed this card's position
+            // Note: side.position is 1, 2, 3... 
+            // If minPos > side.position, it means everyone passed it.
+            if (!side.flipped && minPos > side.position - 1) { 
+                // Wait, rule says "Crossed a face-down card". 
+                // If card is at pos 1. Horse at 1 hasn't crossed it fully? 
+                // Usually interpreted as: If side card is the boundary between 1 and 2.
+                // Let's assume Side Card 1 is at Step 1. If everyone is at Step 1 or higher?
+                // Rule text: "all horses have crossed... flip it"
+                // Let's treat Side Cards as markers AT step 1, 2, 3.
+                // If minPos >= side.position, trigger flip.
+                
+                flipSideCard(index);
+            }
+        });
+    }
+
+    function flipSideCard(index) {
+        const side = state.sideCards[index];
+        side.flipped = true;
+        
+        const cardSuit = side.card.suit;
+        const cardName = SUITS[cardSuit].name;
+        
+        setTimeout(() => {
+            logCommentary(`🔔 赛道翻牌！是一张 ${cardName} ${side.card.value}！`);
+            updatePositions(); // Show flip
+            
+            // Penalty Logic
+            // "If suit matches a horse, that horse moves back 1 step"
+            setTimeout(() => {
+                const horsePos = state.horses[cardSuit];
+                if (horsePos > 0) {
+                    state.horses[cardSuit]--;
+                    logCommentary(`🚫 哎呀！${cardName} 被迫退后一格！`);
+                    
+                    // Visual feedback
+                    const horseEl = document.getElementById(`horse-${cardSuit}`);
+                    horseEl.classList.add('shake');
+                    setTimeout(() => horseEl.classList.remove('shake'), 500);
+                    
+                    updatePositions();
+                }
+            }, 800);
+        }, 300);
+    }
+
+    function toggleAuto() {
+        if (state.autoInterval) {
+            clearInterval(state.autoInterval);
+            state.autoInterval = null;
+            document.getElementById('auto-btn').innerText = "自动演示";
+            document.getElementById('auto-btn').classList.add('secondary');
+        } else {
+            if (state.raceOver) return;
+            drawCard(); // do one immediately
+            state.autoInterval = setInterval(() => {
+                if (state.raceOver) {
+                    toggleAuto();
+                } else {
+                    drawCard();
+                }
+            }, 1500); // 1.5s delay
+            document.getElementById('auto-btn').innerText = "停止演示";
+            document.getElementById('auto-btn').classList.remove('secondary');
+        }
+    }
+
+    function handleWin(suit) {
+        state.raceOver = true;
+        state.winner = suit;
+        if (state.autoInterval) toggleAuto();
+
+        logCommentary(`🎉 比赛结束！冠军是 ${SUITS[suit].name}！ 🎉`);
+        
+        setTimeout(() => {
+            calculateResults(suit);
+            switchScreen('result-screen');
+        }, 2000);
+    }
+
+    function logCommentary(text) {
+        const box = document.getElementById('commentary');
+        const p = document.createElement('div');
+        p.innerText = `> ${text}`;
+        box.prepend(p);
+    }
+    
+    function updateRanking() {
+        // Sort horses by position desc
+        const sorted = SUIT_KEYS.slice().sort((a, b) => state.horses[b] - state.horses[a]);
+        const html = sorted.map((s, i) => `${i+1}. ${SUITS[s].symbol} (${state.horses[s]})`).join('  |  ');
+        document.getElementById('live-ranking').innerHTML = html;
+    }
+
+    /**
+     * Results & Payouts
+     */
+    function calculateResults(winningSuit) {
+        document.getElementById('winner-announce').innerHTML = 
+            `👑 冠军: <span style="color:${SUITS[winningSuit].color}">${SUITS[winningSuit].symbol} ${SUITS[winningSuit].name}</span>`;
+
+        let totalPot = 0;
+        let winners = [];
+        let losersPool = 0;
+
+        // 1. Calculate Pot
+        state.players.forEach(p => {
+            totalPot += p.bet;
+            if (p.horse === winningSuit) {
+                winners.push(p);
+            } else {
+                losersPool += p.bet;
+            }
+        });
+
+        // 2. Distribute
+        const payoutDetails = document.getElementById('payout-details');
+        payoutDetails.innerHTML = `<p>奖池总额: $${totalPot} (输家贡献: $${losersPool})</p>`;
+
+        if (winners.length === 0) {
+            payoutDetails.innerHTML += `<p>无人押中冠军！庄家通吃（筹码移除）。</p>`;
+        } else {
+            // Rule: "Split other horses' chips"
+            // Winner gets their own bet back + (LosersPool / NumWinners)
+            const profitPerWinner = Math.floor(losersPool / winners.length);
+            
+            winners.forEach(p => {
+                p.balance += p.bet; // Return original bet
+                p.balance += profitPerWinner; // Add profit
+            });
+
+            payoutDetails.innerHTML += `<p>共有 ${winners.length} 位赢家，每人分得利润 $${profitPerWinner}。</p>`;
+        }
+
+        // 3. Update Scoreboard
+        const tbody = document.getElementById('scoreboard-body');
+        tbody.innerHTML = '';
+        // Sort by balance
+        const sortedPlayers = [...state.players].sort((a,b) => b.balance - a.balance);
+        
+        sortedPlayers.forEach(p => {
+            const tr = document.createElement('tr');
+            const isWinner = p.horse === winningSuit;
+            tr.innerHTML = `
+                <td>${p.name} ${isWinner ? '✅' : ''}</td>
+                <td>${p.type === 'human' ? '👤' : '🤖'}</td>
+                <td style="color:${p.balance >= 1000 ? '#4caf50' : '#f44336'}">$${p.balance}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    function setupNextRound() {
+        state.roundCount++;
+        goToBetting();
+    }
+
+    function resetGame() {
+        location.reload();
+    }
+
+    // --- Start ---
+    window.onload = init;
+
+</script>
+
+    <div class="ad-slot ad-slot--footer" role="complementary" aria-label="广告 · 底栏">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-5858501694829530"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+    </div>
+</body>
+</html>
