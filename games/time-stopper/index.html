@@ -937,6 +937,16 @@
         .multi-choice-opts .mc-title { font-weight: 700; font-size: 1.02rem; margin-bottom: 4px; color: #fff; }
         .multi-choice-opts .mc-desc { font-size: 0.78rem; color: var(--muted); line-height: 1.4; }
         .multi-choice-close { margin-top: 12px; width: 100%; }
+        .online-create-row { margin-bottom: 10px; }
+        .online-create-btn, #onlineCreateBtn.online-create-btn {
+            width: 100%;
+            font-size: 1.12rem;
+            padding: 16px 18px;
+            letter-spacing: 0.06em;
+            box-shadow: 0 8px 28px rgba(34,211,238,0.38);
+        }
+        #multiChoiceModal.is-open { display: flex !important; }
+        #onlineRoot:not(.hidden) { display: flex !important; }
 
         #onlineRoot {
             position: fixed; inset: 0; z-index: 900;
@@ -1109,11 +1119,11 @@
                             <div class="mode-name">无限模式</div>
                             <div class="mode-desc">一条命连胜，误差过大即终结</div>
                         </div>
-                        <div class="mode-card" id="multiModeCard" role="button" tabindex="0">
+                        <div class="mode-card" id="multiModeCard" data-open-multi role="button" tabindex="0" onclick="typeof openMultiChoice==='function'&&openMultiChoice()">
                             <div class="mode-name">多人对战</div>
                             <div class="mode-desc">本机四人 / 联网 PvP · HP 淘汰</div>
                         </div>
-                        <div class="mode-card" id="raidModeCard" role="button" tabindex="0">
+                        <div class="mode-card" id="raidModeCard" role="button" tabindex="0" onclick="typeof enterOnlineLobby==='function'&&enterOnlineLobby('raid')">
                             <div class="mode-name">多人挑战</div>
                             <div class="mode-desc">联机挑战终极魔王 · 奖励强化</div>
                         </div>
@@ -1218,102 +1228,6 @@
         </div>
     </div>
 
-
-    <!-- Multi mode sub-choice -->
-    <div id="multiChoiceModal" class="multi-choice-modal" role="dialog" aria-modal="true" aria-labelledby="multiChoiceTitle">
-        <div class="multi-choice-card">
-            <h3 id="multiChoiceTitle">多人模式</h3>
-            <p>选择本机同屏、联网对战，或组队挑战魔王。</p>
-            <div class="multi-choice-opts">
-                <button type="button" id="multiChoiceLocal">
-                    <div class="mc-title">本机多人</div>
-                    <div class="mc-desc">四人同机，按键 1–4，共同目标 5.00 秒，误差最小者胜</div>
-                </button>
-                <button type="button" id="multiChoicePvp">
-                    <div class="mc-title">联网对战</div>
-                    <div class="mc-desc">2–4 人在线房间 · 各自目标 · HP 约 100 · 末位淘汰 · AI 可补位</div>
-                </button>
-                <button type="button" id="multiChoiceRaid">
-                    <div class="mc-title">多人挑战</div>
-                    <div class="mc-desc">组队挑战高血量魔王 · 击败可得 HP/ATK/DEF 奖励计时</div>
-                </button>
-            </div>
-            <button type="button" class="btn-secondary multi-choice-close" id="multiChoiceClose">取消</button>
-        </div>
-    </div>
-
-    <!-- Online lobby / battle -->
-    <div id="onlineRoot" class="hidden" aria-hidden="true">
-        <div id="onlineLobby" class="online-screen online-panel hidden">
-            <h2 id="onlineLobbyTitle">联网大厅</h2>
-            <p class="online-mini" id="onlineLobbyHint">创建或加入房间</p>
-            <div class="online-row">
-                <input id="onlineNameInput" maxlength="12" placeholder="显示名称" aria-label="显示名称" />
-            </div>
-            <div class="online-row">
-                <button type="button" class="hall-btn" id="onlineCreateBtn">创建房间</button>
-                <input id="onlineRoomCodeInput" maxlength="4" placeholder="房间码" aria-label="房间码" style="text-transform:uppercase;letter-spacing:0.2em;max-width:120px;" />
-                <button type="button" class="btn-secondary" id="onlineJoinBtn">加入</button>
-            </div>
-            <div class="online-code-big" id="onlineLobbyCode">—</div>
-            <div class="online-seats" id="onlineLobbyPlayers"></div>
-            <div class="online-wait-track"><div class="online-wait-fill" id="onlineWaitBar"></div></div>
-            <p class="online-mini" id="onlineWaitText">等待玩家中…</p>
-            <p class="online-mini" id="onlineLobbyStatus">—</p>
-            <div class="online-row host-only hidden" id="onlineHostActions">
-                <button type="button" class="hall-btn" id="onlineForceStartBtn">提前开局（不足则 AI 补）</button>
-            </div>
-            <div class="online-row">
-                <button type="button" class="btn-secondary" data-online-leave>返回菜单</button>
-            </div>
-        </div>
-
-        <div id="onlineBattle" class="online-screen online-panel hidden">
-            <div class="online-row" style="justify-content:space-between;">
-                <h2 id="onlineBattleTitle" style="margin:0;">对战中</h2>
-                <button type="button" class="btn-secondary" data-online-leave>离开</button>
-            </div>
-            <div id="onlineBossCard" class="online-boss-card hidden">
-                <div class="online-boss-emoji" id="onlineBossEmoji">👾</div>
-                <div class="online-boss-name" id="onlineBossName">终焉时魔</div>
-                <div class="of-hp-track"><div class="of-hp-fill" id="onlineBossHpFill" style="width:100%;background:linear-gradient(90deg,#fb7185,#f472b6);"></div></div>
-                <div class="of-hp-text" id="onlineBossHpText">HP —</div>
-                <div class="of-timing" id="onlineBossTiming">—</div>
-            </div>
-            <div class="online-fighter-grid" id="onlineFighterGrid"></div>
-            <div class="online-log" id="onlineBattleLog"></div>
-
-            <div id="onlineActionWrap" class="online-action-wrap hidden">
-                <p class="online-mini">你的目标：<strong id="onlineMyTarget" style="color:#fff;">—</strong> · 计时 <span id="onlineMyTimer">0.00s</span></p>
-                <div class="online-timing-track" aria-hidden="true">
-                    <div class="online-timing-mark" id="onlineMark" style="left:35%"></div>
-                    <div class="online-timing-needle" id="onlineNeedle" style="left:0%"></div>
-                </div>
-                <button type="button" class="main-action-btn" id="onlineActionBtn">开始 (空格)</button>
-                <p class="kbd-hint">空格 = 开始/停止 · 仅控制自己</p>
-            </div>
-
-            <div id="onlineRewardWrap" class="online-reward-wrap hidden">
-                <p class="online-mini" id="onlineRewardHint">奖励</p>
-                <div class="online-stat-row">
-                    <button type="button" class="online-stat-pick" data-stat="hp">HP</button>
-                    <button type="button" class="online-stat-pick" data-stat="atk">ATK</button>
-                    <button type="button" class="online-stat-pick" data-stat="def">DEF</button>
-                </div>
-                <p class="online-mini">奖励目标：<strong id="onlineRewardTarget">—</strong> ms</p>
-                <div class="online-timing-track" aria-hidden="true">
-                    <div class="online-timing-mark" id="onlineRewardMark" style="left:35%"></div>
-                    <div class="online-timing-needle" id="onlineRewardNeedle" style="left:0%"></div>
-                </div>
-                <button type="button" class="main-action-btn hidden" id="onlineRewardActionBtn">开始奖励计时</button>
-            </div>
-
-            <div id="onlineEndWrap" class="online-end-wrap hidden">
-                <h3 id="onlineEndMsg" style="color:#fff;margin:8px 0 14px;">对局结束</h3>
-                <button type="button" class="hall-btn" data-online-leave>返回菜单</button>
-            </div>
-        </div>
-    </div>
 
     <!-- Story Mode Root -->
     <div id="storyRoot" class="hidden" aria-hidden="true">
@@ -2689,10 +2603,127 @@
       <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
     </div>
 
+    <!-- Multi / Online UI: direct body children (not inside start/menu/game screens) -->
+    <!-- Multi mode sub-choice -->
+    <div id="multiChoiceModal" class="multi-choice-modal" role="dialog" aria-modal="true" aria-labelledby="multiChoiceTitle">
+        <div class="multi-choice-card">
+            <h3 id="multiChoiceTitle">多人模式</h3>
+            <p>选择本机同屏、联网对战，或组队挑战魔王。</p>
+            <div class="multi-choice-opts">
+                <button type="button" id="multiChoiceLocal" onclick="typeof enterLocalMulti==='function'&&enterLocalMulti()">
+                    <div class="mc-title">本机多人</div>
+                    <div class="mc-desc">四人同机，按键 1–4，共同目标 5.00 秒，误差最小者胜</div>
+                </button>
+                <button type="button" id="multiChoicePvp" onclick="typeof enterOnlineLobby==='function'&&enterOnlineLobby('pvp')">
+                    <div class="mc-title">联网对战</div>
+                    <div class="mc-desc">2–4 人在线房间 · 各自目标 · HP 约 100 · 末位淘汰 · AI 可补位</div>
+                </button>
+                <button type="button" id="multiChoiceRaid" onclick="typeof enterOnlineLobby==='function'&&enterOnlineLobby('raid')">
+                    <div class="mc-title">多人挑战</div>
+                    <div class="mc-desc">组队挑战高血量魔王 · 击败可得 HP/ATK/DEF 奖励计时</div>
+                </button>
+            </div>
+            <button type="button" class="btn-secondary multi-choice-close" id="multiChoiceClose" onclick="typeof closeMultiChoice==='function'&&closeMultiChoice()">取消</button>
+        </div>
+    </div>
+
+    <!-- Online lobby / battle -->
+    <div id="onlineRoot" class="hidden" aria-hidden="true">
+        <div id="onlineLobby" class="online-screen online-panel hidden">
+            <h2 id="onlineLobbyTitle">联网大厅</h2>
+            <p class="online-mini" id="onlineLobbyHint">创建或加入房间</p>
+            <div class="online-row">
+                <input id="onlineNameInput" maxlength="12" placeholder="显示名称" aria-label="显示名称" />
+            </div>
+            <div class="online-row online-create-row">
+                <button type="button" class="hall-btn online-create-btn" id="onlineCreateBtn" onclick="typeof createRoom==='function'&&createRoom()">创建房间</button>
+            </div>
+            <div class="online-row">
+                <input id="onlineRoomCodeInput" maxlength="4" placeholder="房间码" aria-label="房间码" style="text-transform:uppercase;letter-spacing:0.2em;flex:1;min-width:120px;" />
+                <button type="button" class="btn-secondary" id="onlineJoinBtn" onclick="typeof joinRoom==='function'&&joinRoom()">加入房间</button>
+            </div>
+            <div class="online-code-big" id="onlineLobbyCode">—</div>
+            <div class="online-seats" id="onlineLobbyPlayers"></div>
+            <div class="online-wait-track"><div class="online-wait-fill" id="onlineWaitBar"></div></div>
+            <p class="online-mini" id="onlineWaitText">等待玩家中…</p>
+            <p class="online-mini" id="onlineLobbyStatus">—</p>
+            <div class="online-row host-only hidden" id="onlineHostActions">
+                <button type="button" class="hall-btn" id="onlineForceStartBtn">提前开局（不足则 AI 补）</button>
+            </div>
+            <div class="online-row">
+                <button type="button" class="btn-secondary" data-online-leave>返回菜单</button>
+            </div>
+        </div>
+
+        <div id="onlineBattle" class="online-screen online-panel hidden">
+            <div class="online-row" style="justify-content:space-between;">
+                <h2 id="onlineBattleTitle" style="margin:0;">对战中</h2>
+                <button type="button" class="btn-secondary" data-online-leave>离开</button>
+            </div>
+            <div id="onlineBossCard" class="online-boss-card hidden">
+                <div class="online-boss-emoji" id="onlineBossEmoji">👾</div>
+                <div class="online-boss-name" id="onlineBossName">终焉时魔</div>
+                <div class="of-hp-track"><div class="of-hp-fill" id="onlineBossHpFill" style="width:100%;background:linear-gradient(90deg,#fb7185,#f472b6);"></div></div>
+                <div class="of-hp-text" id="onlineBossHpText">HP —</div>
+                <div class="of-timing" id="onlineBossTiming">—</div>
+            </div>
+            <div class="online-fighter-grid" id="onlineFighterGrid"></div>
+            <div class="online-log" id="onlineBattleLog"></div>
+
+            <div id="onlineActionWrap" class="online-action-wrap hidden">
+                <p class="online-mini">你的目标：<strong id="onlineMyTarget" style="color:#fff;">—</strong> · 计时 <span id="onlineMyTimer">0.00s</span></p>
+                <div class="online-timing-track" aria-hidden="true">
+                    <div class="online-timing-mark" id="onlineMark" style="left:35%"></div>
+                    <div class="online-timing-needle" id="onlineNeedle" style="left:0%"></div>
+                </div>
+                <button type="button" class="main-action-btn" id="onlineActionBtn">开始 (空格)</button>
+                <p class="kbd-hint">空格 = 开始/停止 · 仅控制自己</p>
+            </div>
+
+            <div id="onlineRewardWrap" class="online-reward-wrap hidden">
+                <p class="online-mini" id="onlineRewardHint">奖励</p>
+                <div class="online-stat-row">
+                    <button type="button" class="online-stat-pick" data-stat="hp">HP</button>
+                    <button type="button" class="online-stat-pick" data-stat="atk">ATK</button>
+                    <button type="button" class="online-stat-pick" data-stat="def">DEF</button>
+                </div>
+                <p class="online-mini">奖励目标：<strong id="onlineRewardTarget">—</strong> ms</p>
+                <div class="online-timing-track" aria-hidden="true">
+                    <div class="online-timing-mark" id="onlineRewardMark" style="left:35%"></div>
+                    <div class="online-timing-needle" id="onlineRewardNeedle" style="left:0%"></div>
+                </div>
+                <button type="button" class="main-action-btn hidden" id="onlineRewardActionBtn">开始奖励计时</button>
+            </div>
+
+            <div id="onlineEndWrap" class="online-end-wrap hidden">
+                <h3 id="onlineEndMsg" style="color:#fff;margin:8px 0 14px;">对局结束</h3>
+                <button type="button" class="hall-btn" data-online-leave>返回菜单</button>
+            </div>
+        </div>
+    </div>
+
     <script src="firebase-config.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
     <script src="story.js"></script>
     <script src="online.js"></script>
+    <script>
+    /* Load Firebase after UI so multi modal/lobby bind even if CDN is slow/blocked */
+    (function () {
+      function load(src) {
+        return new Promise(function (resolve, reject) {
+          var s = document.createElement("script");
+          s.src = src;
+          s.async = true;
+          s.onload = resolve;
+          s.onerror = reject;
+          document.head.appendChild(s);
+        });
+      }
+      var base = "https://www.gstatic.com/firebasejs/10.14.1/";
+      window.__tsFirebaseReady = load(base + "firebase-app-compat.js")
+        .then(function () { return load(base + "firebase-firestore-compat.js"); })
+        .then(function () { window.__TS_FIREBASE_OK = true; })
+        .catch(function () { window.__TS_FIREBASE_LOAD_FAIL = true; });
+    })();
+    </script>
 </body>
 </html>

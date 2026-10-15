@@ -167,22 +167,45 @@ function showOnlineRoot(show) {
   if (!root) return;
   root.classList.toggle("hidden", !show);
   root.setAttribute("aria-hidden", show ? "false" : "true");
+  if (show) {
+    root.style.display = "flex";
+    root.style.visibility = "visible";
+    root.style.pointerEvents = "auto";
+  } else {
+    root.style.display = "none";
+  }
 }
 
 function showOnlineScreen(id) {
-  $$(".online-screen").forEach((el) => el.classList.add("hidden"));
+  $$(".online-screen").forEach((el) => {
+    el.classList.add("hidden");
+    el.style.display = "none";
+  });
   const t = document.getElementById(id);
-  if (t) t.classList.remove("hidden");
+  if (t) {
+    t.classList.remove("hidden");
+    t.style.display = "block";
+  }
 }
 
 function openMultiChoice() {
   const modal = $("#multiChoiceModal");
-  if (modal) modal.style.display = "flex";
+  if (!modal) {
+    console.warn("[TimeStopper] #multiChoiceModal missing");
+    return;
+  }
+  modal.classList.add("is-open");
+  modal.style.display = "flex";
+  modal.style.visibility = "visible";
+  modal.setAttribute("aria-hidden", "false");
 }
 
 function closeMultiChoice() {
   const modal = $("#multiChoiceModal");
-  if (modal) modal.style.display = "none";
+  if (!modal) return;
+  modal.classList.remove("is-open");
+  modal.style.display = "none";
+  modal.setAttribute("aria-hidden", "true");
 }
 
 function enterLocalMulti() {
@@ -190,9 +213,24 @@ function enterLocalMulti() {
   if (typeof setMode === "function") setMode("multi");
 }
 
+function firebaseStatusMessage() {
+  if (typeof firebase === "undefined" || window.__TS_FIREBASE_LOAD_FAIL) {
+    return "联网服务未加载（Firebase）。仍可查看大厅；创建/加入需网络与 firebase-config.js。";
+  }
+  if (!window.FIREBASE_CONFIG) {
+    return "缺少 FIREBASE_CONFIG，请检查 firebase-config.js。";
+  }
+  try {
+    if (!db()) return "Firebase 未就绪，请稍后重试创建/加入。";
+  } catch (e) {
+    return "Firebase 初始化失败：" + (e && e.message ? e.message : e);
+  }
+  return null;
+}
+
 function enterOnlineLobby(mode) {
   closeMultiChoice();
-  Online.mode = mode;
+  Online.mode = mode === "raid" ? "raid" : "pvp";
   Online.active = true;
   Online.room = null;
   Online.roomId = null;
@@ -213,84 +251,116 @@ function enterOnlineLobby(mode) {
   const sr = document.getElementById("storyRoot");
   if (sr) { sr.classList.add("hidden"); sr.setAttribute("aria-hidden", "true"); }
 
+  // Always show lobby UI first (even if Firebase is missing)
   showOnlineRoot(true);
   showOnlineScreen("onlineLobby");
-  $("#onlineLobbyTitle").textContent = mode === "raid" ? "多人挑战 · 组队大厅" : "联网对战 · 大厅";
-  $("#onlineLobbyHint").textContent = mode === "raid"
-    ? "2–4 人联机挑战终极魔王。等待约 22 秒后空位由 AI 补齐。"
-    : "2–4 人联网对战。等待约 22 秒后空位由 AI 补齐。";
+
+  const title = $("#onlineLobbyTitle");
+  const hint = $("#onlineLobbyHint");
+  if (title) title.textContent = Online.mode === "raid" ? "多人挑战 · 组队大厅" : "联网对战 · 大厅";
+  if (hint) {
+    hint.textContent = Online.mode === "raid"
+      ? "2–4 人联机挑战终极魔王。填写名称后可【创建房间】或【加入房间】。"
+      : "2–4 人联网对战。填写名称后可【创建房间】或【加入房间】。";
+  }
   const nameInput = $("#onlineNameInput");
   if (nameInput) nameInput.value = getDisplayName();
-  $("#onlineRoomCodeInput").value = "";
-  $("#onlineLobbyStatus").textContent = "创建房间或输入房间码加入";
-  $("#onlineLobbyPlayers").innerHTML = "";
-  $("#onlineLobbyCode").textContent = "—";
-  $("#onlineWaitBar").style.width = "0%";
-  $("#onlineHostActions").classList.add("hidden");
+  const codeInput = $("#onlineRoomCodeInput");
+  if (codeInput) codeInput.value = "";
+  const players = $("#onlineLobbyPlayers");
+  if (players) players.innerHTML = "";
+  const codeBig = $("#onlineLobbyCode");
+  if (codeBig) codeBig.textContent = "—";
+  const waitBar = $("#onlineWaitBar");
+  if (waitBar) waitBar.style.width = "0%";
+  const hostActions = $("#onlineHostActions");
+  if (hostActions) hostActions.classList.add("hidden");
+
+  const status = $("#onlineLobbyStatus");
+  const fbMsg = firebaseStatusMessage();
+  if (status) {
+    status.textContent = fbMsg || "创建房间或输入房间码加入";
+  }
   if (typeof playSound === "function") playSound("tick");
 }
 
 async function createRoom() {
-  const name = setDisplayName($("#onlineNameInput").value);
-  const d = db();
-  if (!d) {
-    $("#onlineLobbyStatus").textContent = "Firebase 未就绪，请检查 firebase-config.js";
-    return;
-  }
-  let code = genRoomCode();
-  let tries = 0;
-  while (tries < 8) {
-    const snap = await roomRef(code).get();
-    if (!snap.exists) break;
-    code = genRoomCode();
-    tries++;
-  }
-  const me = makeHuman(0, name);
-  const now = Date.now();
-  const doc = {
-    mode: Online.mode,
-    status: "lobby",
-    hostId: me.id,
-    maxPlayers: 4,
-    createdAt: now,
-    updatedAt: now,
-    waitStartedAt: now,
-    round: 0,
-    phase: "idle",
-    players: [me],
-    boss: null,
-    log: "房间已创建，等待玩家加入…",
-    winnerId: null,
-    rewardQueue: [],
-    reward: null,
-    roundTimeoutAt: null,
-    version: 1
-  };
+  if (Online._creating) return;
+  Online._creating = true;
+  const statusEl = $("#onlineLobbyStatus");
   try {
-    await roomRef(code).set(doc);
-  } catch (e) {
-    $("#onlineLobbyStatus").textContent = "创建失败：" + (e.message || e) + "（可能需开放 Firestore 规则，见 online.js 顶部注释）";
-    return;
+    const nameInput = $("#onlineNameInput");
+    const name = setDisplayName(nameInput ? nameInput.value : "");
+    const d = db();
+    if (!d) {
+      if (statusEl) statusEl.textContent = "Firebase 未就绪，请检查 firebase-config.js（大厅仍可浏览）";
+      return;
+    }
+    let code = genRoomCode();
+    let tries = 0;
+    while (tries < 8) {
+      const snap = await roomRef(code).get();
+      if (!snap.exists) break;
+      code = genRoomCode();
+      tries++;
+    }
+    const me = makeHuman(0, name);
+    const now = Date.now();
+    const doc = {
+      mode: Online.mode,
+      status: "lobby",
+      hostId: me.id,
+      maxPlayers: 4,
+      createdAt: now,
+      updatedAt: now,
+      waitStartedAt: now,
+      round: 0,
+      phase: "idle",
+      players: [me],
+      boss: null,
+      log: "房间已创建，等待玩家加入…",
+      winnerId: null,
+      rewardQueue: [],
+      reward: null,
+      roundTimeoutAt: null,
+      version: 1
+    };
+    try {
+      await roomRef(code).set(doc);
+    } catch (e) {
+      if (statusEl) statusEl.textContent = "创建失败：" + (e.message || e) + "（可能需开放 Firestore 规则，见 online.js 顶部注释）";
+      return;
+    }
+    Online.roomId = code;
+    Online.amHost = true;
+    const codeBig = $("#onlineLobbyCode");
+    if (codeBig) codeBig.textContent = code;
+    if (statusEl) statusEl.textContent = "房间 " + code + " · 将链接分享给好友";
+    const hostActions = $("#onlineHostActions");
+    if (hostActions) hostActions.classList.remove("hidden");
+    subscribeRoom(code);
+    startFillWatch();
+  } finally {
+    Online._creating = false;
   }
-  Online.roomId = code;
-  Online.amHost = true;
-  $("#onlineLobbyCode").textContent = code;
-  $("#onlineLobbyStatus").textContent = "房间 " + code + " · 将链接分享给好友";
-  $("#onlineHostActions").classList.remove("hidden");
-  subscribeRoom(code);
-  startFillWatch();
 }
 
 async function joinRoom() {
-  const name = setDisplayName($("#onlineNameInput").value);
-  const raw = ($("#onlineRoomCodeInput").value || "").trim().toUpperCase();
+  if (Online._joining) return;
+  Online._joining = true;
+  try {
+  const nameInput = $("#onlineNameInput");
+  const name = setDisplayName(nameInput ? nameInput.value : "");
+  const codeInput = $("#onlineRoomCodeInput");
+  const raw = ((codeInput && codeInput.value) || "").trim().toUpperCase();
+  const statusEl = $("#onlineLobbyStatus");
   if (!/^[A-Z0-9]{4}$/.test(raw)) {
-    $("#onlineLobbyStatus").textContent = "请输入 4 位房间码";
+    if (statusEl) statusEl.textContent = "请输入 4 位房间码";
     return;
   }
   const d = db();
   if (!d) {
-    $("#onlineLobbyStatus").textContent = "Firebase 未就绪";
+    if (statusEl) statusEl.textContent = "Firebase 未就绪，请检查 firebase-config.js（大厅仍可浏览）";
     return;
   }
   const ref = roomRef(raw);
@@ -325,10 +395,15 @@ async function joinRoom() {
   }
   Online.roomId = raw;
   Online.amHost = false;
-  $("#onlineLobbyCode").textContent = raw;
-  $("#onlineHostActions").classList.add("hidden");
+  const codeBig = $("#onlineLobbyCode");
+  if (codeBig) codeBig.textContent = raw;
+  const hostActions = $("#onlineHostActions");
+  if (hostActions) hostActions.classList.add("hidden");
   subscribeRoom(raw);
   startFillWatch();
+  } finally {
+    Online._joining = false;
+  }
 }
 
 function subscribeRoom(code) {
@@ -1346,14 +1421,34 @@ function bindUI() {
   if (multiCard) {
     multiCard.addEventListener("click", (e) => {
       e.preventDefault();
+      e.stopPropagation();
       openMultiChoice();
     });
   }
   const raidCard = $("#raidModeCard");
   if (raidCard) {
-    raidCard.addEventListener("click", () => {
+    raidCard.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
       closeMultiChoice();
       enterOnlineLobby("raid");
+    });
+  }
+
+  // Document-level delegation: mode cards open modal/lobby even if per-element bind failed
+  if (!window._tsMultiDelegated) {
+    window._tsMultiDelegated = true;
+    document.addEventListener("click", (e) => {
+      const t = e.target && e.target.closest ? e.target.closest("#multiModeCard, [data-open-multi], #raidModeCard") : null;
+      if (!t) return;
+      if (t.id === "raidModeCard") {
+        e.preventDefault();
+        closeMultiChoice();
+        enterOnlineLobby("raid");
+        return;
+      }
+      e.preventDefault();
+      openMultiChoice();
     });
   }
 }
@@ -1361,7 +1456,7 @@ function bindUI() {
 function onGlobalKey(e) {
   if (e.code === "Escape") {
     const modal = $("#multiChoiceModal");
-    if (modal && modal.style.display === "flex") {
+    if (modal && (modal.style.display === "flex" || modal.classList.contains("is-open"))) {
       e.preventDefault();
       closeMultiChoice();
       return;
@@ -1400,9 +1495,21 @@ if (!window._tsOnlineBackHooked) {
 
 window.TimeStopperOnline = {
   openMultiChoice,
+  closeMultiChoice,
   enterOnlineLobby,
+  enterLocalMulti,
+  createRoom,
+  joinRoom,
   leaveOnline,
   isActive: () => Online.active
 };
+
+// Global aliases for inline onclick backups in index.html
+window.openMultiChoice = openMultiChoice;
+window.closeMultiChoice = closeMultiChoice;
+window.enterOnlineLobby = enterOnlineLobby;
+window.enterLocalMulti = enterLocalMulti;
+window.createRoom = createRoom;
+window.joinRoom = joinRoom;
 
 })();
