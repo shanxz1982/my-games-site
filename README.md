@@ -11,13 +11,14 @@ my-games-site/
 ├── assets/hub.css
 ├── games/
 │   ├── time-stopper/
-│   │   ├── index.html         # 时间终结者 + 故事模式 UI
-│   │   └── story.js           # 故事模式（营救公主 · 计时对决）
+│   │   ├── index.html         # 时间终结者 + 故事模式 UI + 英灵殿云同步
+│   │   ├── story.js           # 故事模式（营救公主 · 计时对决）
+│   │   └── firebase-config.js # 与 dice-football 共用 Firebase 配置
 │   └── dice-football/
 │       ├── index.html         # 投骰子吧！创造我的球会
 │       ├── style.css
 │       ├── game.js            # 经理生涯 + 存档 / CloudRecords
-│       └── firebase-config.js # Firebase 占位（空=纯本地）
+│       └── firebase-config.js # Firebase（Firestore 排行榜）
 └── README.md
 ```
 
@@ -27,6 +28,12 @@ my-games-site/
 |------|------|------|
 | 时间终结者 | `games/time-stopper/` | 计时停表 + **故事模式** |
 | 投骰子吧！创造我的球会 | `games/dice-football/` | 经理生涯（中超/中甲） |
+
+### TIME STOPPER · 英灵殿 / 挑战
+
+- 英灵殿：本地 localStorage + 云端 Firestore 集合 `timestopper_hall`（本地 / 云端 / 合并）
+- 挑战模式：每关记录尝试次数；通关按误差与尝试评分；全通总评可提交云端
+- 门户与各游戏页预留 AdSense 玻璃广告位（`data-ad-slot`，尚未接入真实广告）
 
 ### TIME STOPPER · 故事模式
 

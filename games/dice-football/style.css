@@ -128,3 +128,24 @@ a{color:var(--accent2);text-decoration:none}
 .timing-mark{position:absolute;top:0;bottom:0;width:3px;background:var(--accent);box-shadow:0 0 10px rgba(58,209,123,.7);transform:translateX(-50%)}
 .story-log{height:100px;margin-top:12px}
 .story-win{color:#6df9a3}.story-lose{color:#ff7676}
+
+/* AdSense-ready placeholders (empty; no adsbygoogle until publisher ID) */
+.ad-slot {
+  position: relative; display: flex; align-items: center; justify-content: center;
+  margin: 10px auto; border-radius: 14px;
+  background: rgba(12, 18, 40, 0.45);
+  border: 1px dashed rgba(120, 220, 255, 0.28);
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  color: var(--muted, #8ba3c7); font-size: 0.75rem; letter-spacing: 0.04em;
+  text-align: center; overflow: hidden; max-width: 100%; z-index: 20;
+  pointer-events: none;
+}
+.ad-slot::before { content: attr(data-ad-label); opacity: 0.75; padding: 0 10px; }
+.ad-slot--banner { width: min(728px, 94vw); min-height: 56px; max-height: 80px; }
+.ad-slot--footer { width: min(728px, 94vw); min-height: 50px; max-height: 72px; margin: 16px auto 20px; }
+.ad-slot--sidebar { width: min(300px, 92vw); min-height: 120px; max-height: 200px; }
+.ad-rail { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin: 12px 0; }
+@media (max-width: 640px) {
+  .ad-slot--banner, .ad-slot--footer { min-height: 44px; max-height: 58px; font-size: 0.68rem; }
+  .ad-slot--sidebar { min-height: 80px; max-height: 110px; }
+}

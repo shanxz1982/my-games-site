@@ -406,6 +406,45 @@
             border: 1px solid rgba(34, 211, 238, 0.3); cursor: pointer; font-family: inherit; font-weight: 600;
         }
         .lb-tabs button:hover { box-shadow: 0 0 12px rgba(34, 211, 238, 0.25); }
+        .lb-tabs button.active {
+            background: rgba(34, 211, 238, 0.28); color: #e8f4ff;
+            border-color: rgba(34, 211, 238, 0.65); box-shadow: 0 0 14px rgba(34, 211, 238, 0.35);
+        }
+        .lb-source-tabs { margin-bottom: 12px; }
+        .lb-cloud-status { font-size: 0.78rem; color: var(--muted); text-align: center; margin: 4px 0 8px; min-height: 1.2em; }
+        .challenge-stats-panel {
+            margin-top: 8px; padding: 10px 12px; border-radius: 12px;
+            background: rgba(34, 211, 238, 0.08); border: 1px solid rgba(120, 220, 255, 0.18);
+            font-size: 0.82rem; color: var(--muted); text-align: left; line-height: 1.45;
+        }
+        .challenge-stats-panel b { color: var(--cyan); }
+        .challenge-grade {
+            display: inline-block; margin-top: 6px; padding: 4px 12px; border-radius: 999px;
+            font-weight: 800; letter-spacing: 0.06em; background: rgba(167, 139, 250, 0.2);
+            color: #c4b5fd; border: 1px solid rgba(167, 139, 250, 0.4);
+        }
+
+        /* AdSense-ready placeholders (no real ads / no publisher script yet) */
+        .ad-slot {
+            position: relative; display: flex; align-items: center; justify-content: center;
+            margin: 10px auto; border-radius: 14px;
+            background: rgba(12, 18, 40, 0.45);
+            border: 1px dashed rgba(120, 220, 255, 0.28);
+            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            color: var(--muted, #8ba3c7); font-size: 0.75rem; letter-spacing: 0.04em;
+            text-align: center; overflow: hidden; max-width: 100%; z-index: 5;
+            pointer-events: none;
+        }
+        .ad-slot::before { content: attr(data-ad-label); opacity: 0.75; padding: 0 10px; }
+        .ad-slot--banner { width: min(728px, 94vw); min-height: 56px; max-height: 80px; }
+        .ad-slot--footer { width: min(728px, 94vw); min-height: 50px; max-height: 72px; margin: 16px auto 20px; }
+        .ad-slot--sidebar { width: min(300px, 92vw); min-height: 120px; max-height: 200px; }
+        .ad-rail { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin: 12px 0; }
+        @media (max-width: 640px) {
+            .ad-slot--banner, .ad-slot--footer { min-height: 44px; max-height: 58px; font-size: 0.68rem; }
+            .ad-slot--sidebar { min-height: 80px; max-height: 110px; }
+        }
+
         #confetti { position: fixed; inset: 0; pointer-events: none; z-index: 50; }
         .kbd-hint { margin-top: 14px; font-size: 0.72rem; color: rgba(139, 163, 199, 0.7); letter-spacing: 0.02em; }
         @media (max-width: 1100px) {
@@ -753,7 +792,17 @@
     <canvas id="fxCanvas" aria-hidden="true"></canvas>
     <canvas id="confetti"></canvas>
     <a class="hub-back" href="../../">← 返回游戏站</a>
-    <button class="mute-toggle" id="muteBtn" type="button" title="静音开关" aria-label="静音开关">🔊</button>
+    
+    <!--
+      AdSense placeholders — fill ca-pub-YOUR_PUBLISHER_ID + data-ad-slot when ready.
+      Do not load adsbygoogle.js until publisher ID is approved.
+    -->
+    <div class="ad-slot ad-slot--banner"
+         data-ad-slot="timestopper-top-banner"
+         data-ad-client="ca-pub-YOUR_PUBLISHER_ID"
+         data-ad-label="广告位 · 顶栏横幅 (AdSense)"
+         role="complementary" aria-label="广告位预留"></div>
+<button class="mute-toggle" id="muteBtn" type="button" title="静音开关" aria-label="静音开关">🔊</button>
 
     <div id="startScreen">
         <div class="pulse-ring"></div>
@@ -850,6 +899,7 @@
                     </div>
                     <div class="level-bar"><div class="level-bar-fill" id="levelBarFill"></div></div>
                     <div class="accuracy-streak" id="accuracyStreak"></div>
+                    <div id="challengeAttemptHint" style="margin-top:6px;font-size:0.8rem;color:var(--muted);"></div>
                 </div>
                 <div class="combo-meter" id="comboMeter">
                     <div class="combo-header">
@@ -1046,6 +1096,7 @@
             <div id="modalRank" class="rank-badge rank-gold">GOLD</div>
             <p id="modalDesc">误差: 0.04秒</p>
             <div id="extraDesc" style="color:var(--muted); margin-bottom:10px;"></div>
+            <div id="challengeStatsBox" class="challenge-stats-panel" style="display:none;"></div>
             <div id="registerForm" style="display:none; margin-top:10px;">
                 <p style="font-size:0.9rem; color:var(--muted);">创造了新纪录！请在英灵殿留下你的名字：</p>
                 <input type="text" id="playerName" placeholder="输入名字 (MAX 8字符)" maxlength="8">
@@ -1060,14 +1111,21 @@
     </div>
 
     <div id="leaderboardModal" class="modal-overlay">
-        <div class="modal-content" style="max-width:520px;">
+        <div class="modal-content" style="max-width:560px;">
             <h2>英灵殿 (Hall of Fame)</h2>
-            <div class="lb-tabs">
-                <button type="button" onclick="renderLeaderboard('diamond')">💎 钻石</button>
-                <button type="button" onclick="renderLeaderboard('platinum')">💠 铂金</button>
-                <button type="button" onclick="renderLeaderboard('gold')">🥇 黄金</button>
-                <button type="button" onclick="renderLeaderboard('silver')">🥈 白银</button>
-                <button type="button" onclick="renderLeaderboard('infinite')">♾️ 无限</button>
+            <div class="lb-tabs lb-source-tabs" id="lbSourceTabs">
+                <button type="button" data-source="local" class="active" onclick="setLbSource('local')">📱 本地</button>
+                <button type="button" data-source="cloud" onclick="setLbSource('cloud')">☁️ 云端</button>
+                <button type="button" data-source="merged" onclick="setLbSource('merged')">🔀 合并</button>
+            </div>
+            <div id="lbCloudStatus" class="lb-cloud-status">本地纪录 · 离线可用</div>
+            <div class="lb-tabs" id="lbRankTabs">
+                <button type="button" data-filter="diamond" class="active" onclick="renderLeaderboard('diamond')">💎 钻石</button>
+                <button type="button" data-filter="platinum" onclick="renderLeaderboard('platinum')">💠 铂金</button>
+                <button type="button" data-filter="gold" onclick="renderLeaderboard('gold')">🥇 黄金</button>
+                <button type="button" data-filter="silver" onclick="renderLeaderboard('silver')">🥈 白银</button>
+                <button type="button" data-filter="infinite" onclick="renderLeaderboard('infinite')">♾️ 无限</button>
+                <button type="button" data-filter="challenge" onclick="renderLeaderboard('challenge')">🏔️ 挑战</button>
             </div>
             <div id="lbContent" class="leaderboard-list"></div>
             <br>
@@ -1080,6 +1138,8 @@
         const LS_MUTE = 'timeStopperMuted';
         const LS_BEST_STREAK = 'timeStopperBestStreak';
         const LS_NAMES = 'timeStopperPlayerNames';
+        const LS_CHALLENGE = 'timeStopperChallengeRuns';
+        const CLOUD_COLLECTION = 'timestopper_hall';
         const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
         const state = {
@@ -1098,7 +1158,118 @@
             multiCountingDown: false,
             soundMuted: localStorage.getItem(LS_MUTE) === '1',
             bestStreak: parseInt(localStorage.getItem(LS_BEST_STREAK) || '0', 10) || 0,
+            /* challenge mode tracking */
+            levelAttempts: 0,
+            challengeLevelStats: [],
+            lastLevelClear: null,
         };
+
+        let lbSource = 'local';
+        let lbFilter = 'diamond';
+        let cloudCache = null;
+        let cloudCacheAt = 0;
+
+        const CloudHall = {
+            _ready: false, _db: null,
+            isConfigured() {
+                const c = window.FIREBASE_CONFIG || {};
+                return !!(c.projectId && c.apiKey);
+            },
+            async init() {
+                if (!this.isConfigured()) return false;
+                if (this._ready) return true;
+                try {
+                    if (typeof firebase === 'undefined') return false;
+                    if (!firebase.apps.length) firebase.initializeApp(window.FIREBASE_CONFIG);
+                    this._db = firebase.firestore();
+                    this._ready = true;
+                    return true;
+                } catch (e) {
+                    console.warn('CloudHall init failed', e);
+                    return false;
+                }
+            },
+            async submit(entry) {
+                if (!(await this.init())) {
+                    return { ok: false, mode: 'local', msg: '未配置 Firebase，仅本地保存' };
+                }
+                try {
+                    const payload = Object.assign({}, entry, {
+                        updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                        createdAt: Date.now()
+                    });
+                    delete payload.id;
+                    await this._db.collection(CLOUD_COLLECTION).add(payload);
+                    cloudCache = null;
+                    return { ok: true, mode: 'cloud', msg: '已同步到云端英灵殿' };
+                } catch (e) {
+                    return { ok: false, mode: 'local', msg: '云端提交失败，已保留本地：' + (e.message || e) };
+                }
+            },
+            async fetchAll(limit) {
+                limit = limit || 80;
+                if (!(await this.init())) return { mode: 'local', rows: [], error: 'no-firebase' };
+                try {
+                    const snap = await this._db.collection(CLOUD_COLLECTION)
+                        .orderBy('createdAt', 'desc').limit(limit).get();
+                    const rows = snap.docs.map(d => Object.assign({ id: d.id, _cloud: true }, d.data()));
+                    return { mode: 'cloud', rows };
+                } catch (e) {
+                    return { mode: 'local', rows: [], error: String(e) };
+                }
+            }
+        };
+        window.CloudHall = CloudHall;
+
+        function loadLocalHall() {
+            try { return JSON.parse(localStorage.getItem(LS_DB)) || []; } catch (e) { return []; }
+        }
+        function saveLocalHall(db) {
+            localStorage.setItem(LS_DB, JSON.stringify(db));
+        }
+        function loadChallengeRuns() {
+            try { return JSON.parse(localStorage.getItem(LS_CHALLENGE)) || []; } catch (e) { return []; }
+        }
+        function saveChallengeRuns(runs) {
+            localStorage.setItem(LS_CHALLENGE, JSON.stringify(runs.slice(-40)));
+        }
+
+        /** Score one cleared level: error vs tolerance + attempt count. Returns {score, grade, accuracyPts, attemptPts} */
+        function scoreChallengeLevel(diff, tolerance, attempts) {
+            const ratio = tolerance > 0 ? Math.min(1, diff / tolerance) : 1;
+            const accuracyPts = Math.round(100 * (1 - ratio * 0.85));
+            const attemptPts = Math.max(0, 100 - Math.max(0, attempts - 1) * 22);
+            const score = Math.round(accuracyPts * 0.6 + attemptPts * 0.4);
+            let grade = 'D';
+            if (score >= 92) grade = 'S';
+            else if (score >= 80) grade = 'A';
+            else if (score >= 65) grade = 'B';
+            else if (score >= 50) grade = 'C';
+            return { score, grade, accuracyPts, attemptPts };
+        }
+        function overallChallengeGrade(stats) {
+            if (!stats.length) return { score: 0, grade: '-', totalAttempts: 0 };
+            const score = Math.round(stats.reduce((s, x) => s + x.score, 0) / stats.length);
+            const totalAttempts = stats.reduce((s, x) => s + x.attempts, 0);
+            let grade = 'D';
+            if (score >= 92) grade = 'S';
+            else if (score >= 80) grade = 'A';
+            else if (score >= 65) grade = 'B';
+            else if (score >= 50) grade = 'C';
+            return { score, grade, totalAttempts };
+        }
+        function formatChallengeStatsHtml(stats, overall, partial) {
+            let html = '<div><b>' + (partial ? '本关结算' : '挑战成绩单') + '</b></div>';
+            stats.forEach(st => {
+                html += '<div style="margin-top:4px;">L' + st.level + ' · 误差 ' + st.diff.toFixed(3) +
+                    's · 尝试 ' + st.attempts + ' 次 · <b>' + st.score + '</b> 分 (' + st.grade + ')</div>';
+            });
+            if (overall) {
+                html += '<div class="challenge-grade">总评 ' + overall.grade + ' · ' + overall.score +
+                    ' 分 · 合计尝试 ' + overall.totalAttempts + '</div>';
+            }
+            return html;
+        }
 
         const levels = [
             { target: 5.00, blind: false, tolerance: 0.1, desc: "Level 1: 热身" },
@@ -1251,6 +1422,9 @@
             levelProgress.classList.remove('show');
             comboMeter.classList.remove('show');
             state.challengeClears = 0;
+            state.levelAttempts = 0;
+            state.challengeLevelStats = [];
+            state.lastLevelClear = null;
 
             if (mode === 'free') {
                 document.getElementById('modeDisplay').textContent = '自由模式';
@@ -1264,6 +1438,8 @@
             } else if (mode === 'challenge') {
                 document.getElementById('modeDisplay').textContent = '闯关模式';
                 state.level = 1;
+                state.levelAttempts = 0;
+                state.challengeLevelStats = [];
                 levelProgress.classList.add('show');
                 setupLevel();
             } else if (mode === 'infinite') {
@@ -1290,6 +1466,13 @@
             document.getElementById('levelTolText').textContent = '容差 ±' + cfg.tolerance.toFixed(2) + 's';
             document.getElementById('accuracyStreak').textContent =
                 state.challengeClears > 0 ? ('连续通关 ' + state.challengeClears + ' 关') : '';
+            const hint = document.getElementById('challengeAttemptHint');
+            if (hint) {
+                const clearedTip = state.challengeLevelStats.length
+                    ? (' · 已评 ' + state.challengeLevelStats.map(s => 'L' + s.level + ':' + s.grade).join(' '))
+                    : '';
+                hint.textContent = '本关尝试：' + state.levelAttempts + ' 次' + clearedTip;
+            }
         }
 
         function updateComboUI() {
@@ -1304,9 +1487,10 @@
             const cfg = levels[state.level - 1];
             state.targetTime = cfg.target;
             state.currentTolerance = cfg.tolerance;
+            state.levelAttempts = 0;
             targetDisplay.textContent = cfg.target.toFixed(2);
             document.getElementById('levelDisplay').textContent = cfg.desc;
-            document.getElementById('statusArea').textContent = '准备就绪';
+            document.getElementById('statusArea').textContent = '准备就绪 · 记录尝试次数直到通关';
             updateLevelProgress();
         }
 
@@ -1498,30 +1682,44 @@
                 showResultModal(rank, diff);
             } else if (state.mode === 'challenge') {
                 const cfg = levels[state.level - 1];
+                state.levelAttempts++;
+                updateLevelProgress();
                 if (diff <= cfg.tolerance) {
                     playSound('win');
                     neonBorder.classList.add('neon-active');
+                    const scored = scoreChallengeLevel(diff, cfg.tolerance, state.levelAttempts);
+                    const levelStat = {
+                        level: state.level,
+                        target: cfg.target,
+                        diff: diff,
+                        attempts: state.levelAttempts,
+                        score: scored.score,
+                        grade: scored.grade,
+                        accuracyPts: scored.accuracyPts,
+                        attemptPts: scored.attemptPts,
+                        desc: cfg.desc
+                    };
+                    state.challengeLevelStats.push(levelStat);
+                    state.lastLevelClear = levelStat;
                     state.challengeClears++;
                     updateLevelProgress();
                     setTimeout(() => {
                         if (state.level < levels.length) {
                             document.getElementById('statusArea').textContent =
-                                '🎉 通过 Level ' + state.level + '！误差 ' + diff.toFixed(3) + 's';
-                            state.level++;
-                            setupLevel();
-                            resetGameUI();
-                            document.getElementById('levelBarFill').style.width =
-                                (((state.level - 1) / levels.length) * 100) + '%';
+                                '🎉 L' + levelStat.level + ' 通关 · ' + levelStat.grade + ' · ' +
+                                levelStat.score + '分 · 尝试 ' + levelStat.attempts + ' · 误差 ' + diff.toFixed(3) + 's';
+                            showChallengeMidClearModal(levelStat);
                         } else {
                             document.getElementById('levelBarFill').style.width = '100%';
                             fireConfetti();
-                            showResultModal('diamond', diff, '全关卡制霸！');
+                            finishChallengeRun(diff);
                         }
                     }, 400);
                 } else {
                     playSound('fail');
                     document.getElementById('statusArea').textContent =
-                        '失败... 误差 ' + diff.toFixed(3) + ' > 允许 ' + cfg.tolerance;
+                        '未过关（第 ' + state.levelAttempts + ' 次）· 误差 ' + diff.toFixed(3) +
+                        ' > 允许 ' + cfg.tolerance + ' · 继续尝试！';
                 }
             } else if (state.mode === 'infinite') {
                 if (diff <= state.currentTolerance) {
@@ -1630,6 +1828,57 @@
         }
 
         let currentRecord = null;
+
+        function hideChallengeStatsBox() {
+            const box = document.getElementById('challengeStatsBox');
+            if (box) { box.style.display = 'none'; box.innerHTML = ''; }
+        }
+
+        function showChallengeLevelClear(levelStat, isFinal) {
+            const box = document.getElementById('challengeStatsBox');
+            if (!box) return;
+            const overall = isFinal ? overallChallengeGrade(state.challengeLevelStats) : null;
+            box.style.display = 'block';
+            box.innerHTML = formatChallengeStatsHtml(
+                isFinal ? state.challengeLevelStats : [levelStat],
+                overall,
+                !isFinal
+            );
+        }
+
+        function finishChallengeRun(lastDiff) {
+            const overall = overallChallengeGrade(state.challengeLevelStats);
+            const date = new Date().toLocaleDateString('zh-CN');
+            const run = {
+                type: 'challenge',
+                mode: 'challenge',
+                date,
+                score: overall.score,
+                grade: overall.grade,
+                totalAttempts: overall.totalAttempts,
+                levels: state.challengeLevelStats.slice(),
+                rank: overall.grade === 'S' ? 'diamond' : (overall.grade === 'A' ? 'platinum' : (overall.grade === 'B' ? 'gold' : 'silver')),
+                diff: lastDiff
+            };
+            const runs = loadChallengeRuns();
+            runs.push(Object.assign({}, run, { name: '未命名' }));
+            saveChallengeRuns(runs);
+
+            document.getElementById('modalTitle').textContent = '挑战全通 · 总评 ' + overall.grade;
+            const rRank = document.getElementById('modalRank');
+            rRank.className = 'rank-badge rank-' + run.rank;
+            rRank.textContent = overall.grade;
+            document.getElementById('modalDesc').textContent =
+                '总分 ' + overall.score + ' · 合计尝试 ' + overall.totalAttempts + ' 次';
+            document.getElementById('extraDesc').textContent = '可登记英灵殿（本地 + 可选云端）';
+            showChallengeLevelClear(null, true);
+            document.getElementById('registerForm').style.display = 'block';
+            document.getElementById('nonRegisterActions').style.display = 'none';
+            currentRecord = run;
+            resultModal.style.display = 'flex';
+            playSound('win');
+        }
+
         function showResultModal(rank, diff, titleOverride) {
             const modal = resultModal;
             const rTitle = document.getElementById('modalTitle');
@@ -1639,6 +1888,7 @@
             const regForm = document.getElementById('registerForm');
             const noReg = document.getElementById('nonRegisterActions');
 
+            hideChallengeStatsBox();
             rTitle.textContent = titleOverride || '挑战结算';
             rRank.className = 'rank-badge rank-' + rank;
             rRank.textContent = rank.toUpperCase();
@@ -1651,7 +1901,10 @@
                 neonBorder.classList.add('neon-active');
                 regForm.style.display = 'block';
                 noReg.style.display = 'none';
-                currentRecord = { type: 'ranked', rank, diff, date: new Date().toLocaleDateString() };
+                currentRecord = {
+                    type: 'ranked', mode: 'ranked', rank, diff,
+                    date: new Date().toLocaleDateString('zh-CN')
+                };
             } else {
                 playSound('fail');
                 regForm.style.display = 'none';
@@ -1662,6 +1915,7 @@
         }
 
         function showInfiniteFail(diff) {
+            hideChallengeStatsBox();
             document.getElementById('modalTitle').textContent = '无限模式终结';
             const rRank = document.getElementById('modalRank');
             rRank.className = 'rank-badge rank-platinum';
@@ -1671,78 +1925,217 @@
                 '连胜次数：' + state.infiniteCount + '　·　最佳：' + state.bestStreak;
             document.getElementById('registerForm').style.display = 'block';
             document.getElementById('nonRegisterActions').style.display = 'none';
-            currentRecord = { type: 'infinite', count: state.infiniteCount, date: new Date().toLocaleDateString() };
+            currentRecord = {
+                type: 'infinite', mode: 'infinite', count: state.infiniteCount,
+                date: new Date().toLocaleDateString('zh-CN')
+            };
             resultModal.style.display = 'flex';
         }
 
         function closeModal() {
             resultModal.style.display = 'none';
+            hideChallengeStatsBox();
+            if (window._challengeAdvanceAfterModal) {
+                window._challengeAdvanceAfterModal = false;
+                state.level++;
+                setupLevel();
+                resetGameUI();
+                document.getElementById('levelBarFill').style.width =
+                    (((state.level - 1) / levels.length) * 100) + '%';
+                updateLevelProgress();
+                return;
+            }
             if (state.mode === 'infinite') {
                 setMode('infinite');
             }
         }
 
-        function submitScore() {
+        async function submitScore() {
             const nameInput = document.getElementById('playerName');
-            const name = nameInput.value.trim() || '无名氏';
-            let db = [];
-            try { db = JSON.parse(localStorage.getItem(LS_DB)) || []; } catch (e) { db = []; }
-
-            if (currentRecord && currentRecord.type === 'infinite') {
-                db.push({ type: 'infinite', name, count: currentRecord.count, date: currentRecord.date });
-            } else if (currentRecord) {
-                db.push({ type: 'ranked', name, rank: currentRecord.rank, diff: currentRecord.diff, date: currentRecord.date });
+            const name = (nameInput.value.trim() || '无名氏').slice(0, 8);
+            if (!currentRecord) {
+                alert('没有可登记的纪录');
+                return;
             }
 
-            localStorage.setItem(LS_DB, JSON.stringify(db));
-            alert('登记成功！已载入英灵殿。');
+            const entry = Object.assign({}, currentRecord, { name });
+            if (entry.type === 'challenge') {
+                entry.mode = 'challenge';
+                entry.diff = entry.diff != null ? entry.diff : 0;
+                entry.rank = entry.grade || entry.rank || 'gold';
+            } else if (entry.type === 'infinite') {
+                entry.mode = 'infinite';
+                entry.rank = entry.rank || 'infinite';
+                entry.diff = entry.diff != null ? entry.diff : 0;
+            } else {
+                entry.type = 'ranked';
+                entry.mode = 'ranked';
+            }
+
+            const db = loadLocalHall();
+            db.push(entry);
+            saveLocalHall(db);
+
+            if (entry.type === 'challenge') {
+                const runs = loadChallengeRuns();
+                if (runs.length) {
+                    runs[runs.length - 1].name = name;
+                    saveChallengeRuns(runs);
+                }
+            }
+
+            let msg = '登记成功！已写入本地英灵殿。';
+            const cloudRes = await CloudHall.submit({
+                name: entry.name,
+                rank: entry.rank || '',
+                diff: typeof entry.diff === 'number' ? entry.diff : 0,
+                mode: entry.mode || entry.type || 'ranked',
+                date: entry.date || new Date().toLocaleDateString('zh-CN'),
+                count: entry.count || 0,
+                score: entry.score || 0,
+                grade: entry.grade || '',
+                totalAttempts: entry.totalAttempts || 0
+            });
+            if (cloudRes.ok) msg += '\n' + cloudRes.msg;
+            else if (CloudHall.isConfigured()) msg += '\n' + cloudRes.msg;
+            else msg += '\n（离线 / 未配置 Firebase，仅本地）';
+
+            alert(msg);
             closeModal();
             nameInput.value = '';
         }
 
-        function showLeaderboard() {
-            document.getElementById('leaderboardModal').style.display = 'flex';
-            renderLeaderboard('diamond');
+        function setLbSource(source) {
+            lbSource = source;
+            document.querySelectorAll('#lbSourceTabs button').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.source === source);
+            });
+            renderLeaderboard(lbFilter);
         }
 
-        function renderLeaderboard(filter) {
-            const list = document.getElementById('lbContent');
-            list.innerHTML = '';
-            let db = [];
-            try { db = JSON.parse(localStorage.getItem(LS_DB)) || []; } catch (e) { db = []; }
+        function showLeaderboard() {
+            document.getElementById('leaderboardModal').style.display = 'flex';
+            lbFilter = 'diamond';
+            document.querySelectorAll('#lbRankTabs button').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.filter === lbFilter);
+            });
+            renderLeaderboard(lbFilter);
+        }
 
+        function hallEntryKey(item) {
+            return [item.name || '', item.mode || item.type || '', item.rank || '',
+                String(item.diff != null ? item.diff : ''), String(item.count || 0),
+                String(item.score || ''), item.date || ''].join('|');
+        }
+
+        function filterHallRows(rows, filter) {
             if (filter === 'infinite') {
-                const filtered = db.filter(item => item.type === 'infinite').sort((a,b) => (b.count||0) - (a.count||0));
-                if (filtered.length === 0) {
-                    list.innerHTML = "<div style='padding:20px; text-align:center; color:var(--muted);'>暂无数据，去冲击连胜吧！</div>";
-                    return;
-                }
-                filtered.forEach((item, index) => {
-                    const row = document.createElement('div');
-                    row.className = 'lb-item';
-                    row.innerHTML = '<div style="flex:1;"><span class="lb-rank-dot" style="background:#a78bfa"></span><b>#' + (index+1) + ' ' + item.name + '</b></div><div style="flex:1; text-align:right;">连胜: ' + item.count + '</div>';
-                    list.appendChild(row);
-                });
-                return;
+                return rows.filter(i => (i.mode === 'infinite' || i.type === 'infinite'))
+                    .sort((a, b) => (b.count || 0) - (a.count || 0));
             }
+            if (filter === 'challenge') {
+                return rows.filter(i => (i.mode === 'challenge' || i.type === 'challenge'))
+                    .sort((a, b) => (b.score || 0) - (a.score || 0) || (a.totalAttempts || 99) - (b.totalAttempts || 99));
+            }
+            return rows.filter(i => {
+                const ranked = (i.mode === 'ranked' || i.type === 'ranked' || (!i.type && !i.mode && i.rank));
+                return ranked && i.rank === filter;
+            }).sort((a, b) => (a.diff || 0) - (b.diff || 0));
+        }
 
-            const filtered = db.filter(item => (item.type === 'ranked' || !item.type) && item.rank === filter)
-                                .sort((a, b) => a.diff - b.diff);
-            if (filtered.length === 0) {
-                list.innerHTML = "<div style='padding:20px; text-align:center; color:var(--muted);'>暂无数据，快去挑战吧！</div>";
+        function paintHallRows(list, filtered, filter) {
+            if (!filtered.length) {
+                const emptyMsg = filter === 'infinite' ? '暂无数据，去冲击连胜吧！'
+                    : (filter === 'challenge' ? '暂无挑战通关纪录' : '暂无数据，快去挑战吧！');
+                list.innerHTML = "<div style='padding:20px; text-align:center; color:var(--muted);'>" + emptyMsg + "</div>";
                 return;
             }
             const colorMap = {
                 diamond: '#b9f2ff', platinum: '#e5e4e2', gold: '#ffd700',
-                silver: '#c0c0c0', bronze: '#cd7f32'
+                silver: '#c0c0c0', bronze: '#cd7f32', infinite: '#a78bfa', challenge: '#c4b5fd'
             };
+            const dot = colorMap[filter] || '#cd7f32';
             filtered.forEach((item, index) => {
                 const row = document.createElement('div');
                 row.className = 'lb-item';
-                row.innerHTML = '<div style="flex:1;"><span class="lb-rank-dot" style="background:' + (colorMap[filter] || '#cd7f32') + '"></span><b>#' + (index+1) + ' ' + item.name + '</b></div><div style="flex:1; text-align:right; font-family:monospace;">误差: ' + ((item.diff || 0).toFixed(3)) + 's</div>';
+                const cloudTag = item._cloud ? ' <span style="font-size:0.7rem;color:var(--muted)">☁️</span>' : '';
+                let right = '';
+                if (filter === 'infinite') {
+                    right = '连胜: ' + (item.count || 0);
+                } else if (filter === 'challenge') {
+                    right = (item.grade || '?') + ' · ' + (item.score || 0) + '分 · 尝试 ' + (item.totalAttempts || '-');
+                } else {
+                    right = '误差: ' + ((item.diff || 0).toFixed(3)) + 's';
+                }
+                const dateBit = item.date ? (' <span style="opacity:.55;font-size:0.75rem">' + item.date + '</span>') : '';
+                row.innerHTML = '<div style="flex:1;"><span class="lb-rank-dot" style="background:' + dot +
+                    '"></span><b>#' + (index + 1) + ' ' + (item.name || '无名') + '</b>' + cloudTag + dateBit +
+                    '</div><div style="flex:1; text-align:right; font-family:monospace;">' + right + '</div>';
                 list.appendChild(row);
             });
         }
+
+        async function renderLeaderboard(filter) {
+            lbFilter = filter || lbFilter;
+            document.querySelectorAll('#lbRankTabs button').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.filter === lbFilter);
+            });
+            const list = document.getElementById('lbContent');
+            const status = document.getElementById('lbCloudStatus');
+            list.innerHTML = '<div style="padding:16px;text-align:center;color:var(--muted);">加载中…</div>';
+
+            const localRows = loadLocalHall().concat(
+                loadChallengeRuns().filter(r => r.type === 'challenge' && !loadLocalHall().some(
+                    h => h.type === 'challenge' && h.name === r.name && h.date === r.date && h.score === r.score
+                ))
+            );
+
+            let cloudRows = [];
+            let cloudMode = 'offline';
+            if (lbSource !== 'local') {
+                if (cloudCache && (Date.now() - cloudCacheAt < 30000)) {
+                    cloudRows = cloudCache;
+                    cloudMode = 'cloud-cache';
+                } else {
+                    const res = await CloudHall.fetchAll(80);
+                    cloudMode = res.mode;
+                    cloudRows = res.rows || [];
+                    if (res.mode === 'cloud') {
+                        cloudCache = cloudRows;
+                        cloudCacheAt = Date.now();
+                    }
+                    if (res.error && status) {
+                        status.textContent = '云端拉取失败，回退本地：' + res.error;
+                    }
+                }
+            }
+
+            let rows = [];
+            if (lbSource === 'local') {
+                rows = localRows;
+                if (status) status.textContent = CloudHall.isConfigured()
+                    ? '本地纪录 · Firebase 已配置（切换「云端」可拉取）'
+                    : '本地纪录 · 离线可用（未配置 / 不可用 Firebase）';
+            } else if (lbSource === 'cloud') {
+                rows = cloudRows;
+                if (status) status.textContent = cloudMode.indexOf('cloud') === 0
+                    ? ('云端 timestopper_hall · ' + cloudRows.length + ' 条')
+                    : '云端不可用，请检查网络或 Firebase 规则';
+            } else {
+                const map = new Map();
+                localRows.forEach(r => map.set(hallEntryKey(r), r));
+                cloudRows.forEach(r => {
+                    const k = hallEntryKey(r);
+                    if (!map.has(k)) map.set(k, r);
+                });
+                rows = Array.from(map.values());
+                if (status) status.textContent = '合并视图 · 本地 ' + localRows.length + ' + 云端 ' + cloudRows.length;
+            }
+
+            list.innerHTML = '';
+            paintHallRows(list, filterHallRows(rows, lbFilter), lbFilter);
+        }
+
 
 
         // Atmospheric FX (particles + soft drift) — no CDN
@@ -1873,6 +2266,23 @@
             requestAnimationFrame(animateConfetti);
         }
     </script>
+
+    <div class="ad-rail">
+      <div class="ad-slot ad-slot--sidebar"
+           data-ad-slot="timestopper-side"
+           data-ad-client="ca-pub-YOUR_PUBLISHER_ID"
+           data-ad-label="广告位 · 侧栏 / 底部 (AdSense)"
+           role="complementary" aria-label="广告位预留"></div>
+    </div>
+    <div class="ad-slot ad-slot--footer"
+         data-ad-slot="timestopper-bottom-banner"
+         data-ad-client="ca-pub-YOUR_PUBLISHER_ID"
+         data-ad-label="广告位 · 底栏横幅 (AdSense)"
+         role="complementary" aria-label="广告位预留"></div>
+
+    <script src="firebase-config.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
     <script src="story.js"></script>
 </body>
 </html>
