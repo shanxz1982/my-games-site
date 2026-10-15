@@ -27,10 +27,9 @@
 <div id="menu" class="screen hidden">
   <div class="panel" style="min-width:min(420px,92vw)">
     <div class="title" style="text-align:center">投骰子吧！创造我的球会</div>
-    <div class="subtitle" style="text-align:center;margin-bottom:14px">中超 · 中甲 · 足协杯 · 世界冠军杯</div>
+    <div class="subtitle" style="text-align:center;margin-bottom:14px">中超 · 中甲 · 足协杯 · 世界冠军杯<br><span style="font-size:12px;opacity:.75">故事模式已移至「时间终结者 TIME STOPPER」</span></div>
     <div class="col">
       <button id="btnNew" class="btn cyan">经理生涯 · 新游戏</button>
-      <button id="btnStory" class="btn primary">故事模式 · 营救公主</button>
       <button id="btnContinue" class="btn">继续游戏 / 存档槽</button>
       <button id="btnHallOfFame" class="btn">本地殿堂 / 纪录</button>
       <button id="btnCloudLB" class="btn">全球排行榜</button>
@@ -121,94 +120,6 @@
   </div>
 </div>
 
-
-<!-- Story Mode -->
-<div id="storyHub" class="screen hidden">
-  <div class="panel" style="min-width:min(480px,92vw)">
-    <div class="title" style="text-align:center;font-size:1.5rem">故事模式</div>
-    <div class="subtitle" style="text-align:center;margin:8px 0 14px">勇者闯关 · 计时对决 · 营救公主</div>
-    <div class="col">
-      <button id="storyNew" class="btn cyan">开始冒险</button>
-      <button id="storyContinue" class="btn">继续冒险</button>
-      <button id="storyBackMenu" class="btn">返回主菜单</button>
-    </div>
-  </div>
-</div>
-
-<div id="storyNarration" class="screen hidden">
-  <div class="panel story-panel">
-    <div class="story-chapter" id="storyChapterLabel">第 1 章</div>
-    <div class="title" style="font-size:1.35rem;margin:8px 0" id="storyTitle">-</div>
-    <div class="story-text" id="storyBody">-</div>
-    <div class="row" style="margin-top:16px;justify-content:flex-end">
-      <button id="storyNarrNext" class="btn cyan">继续</button>
-    </div>
-  </div>
-</div>
-
-<div id="storyBattle" class="screen hidden">
-  <div class="story-battle-wrap">
-    <div class="story-top">
-      <span class="pill" id="storyStagePill">关卡 1</span>
-      <span class="pill" id="storyHeroLv">勇者 Lv.1</span>
-      <button class="btn" id="storyFlee" style="margin-left:auto">撤退</button>
-    </div>
-    <div class="story-arena">
-      <div class="story-fighter hero-side">
-        <div class="fighter-name" id="storyHeroName">勇者</div>
-        <div class="hp-bar"><span id="storyHeroHpBar"></span></div>
-        <div class="mini" id="storyHeroHpText">HP 100/100</div>
-        <div class="fighter-art hero-art-badge">⚔️</div>
-      </div>
-      <div class="story-vs">VS</div>
-      <div class="story-fighter enemy-side">
-        <div class="fighter-name" id="storyEnemyName">敌人</div>
-        <div class="hp-bar enemy"><span id="storyEnemyHpBar"></span></div>
-        <div class="mini" id="storyEnemyHpText">HP 50/50</div>
-        <div class="fighter-art" id="storyEnemyArt">👾</div>
-      </div>
-    </div>
-    <div class="panel story-combat-panel">
-      <div class="subtitle">计时对决 · 最接近目标时间者发动攻击</div>
-      <div class="timing-target">目标时间 <b id="storyTargetMs">500</b> ms</div>
-      <div class="timing-track">
-        <div class="timing-needle" id="storyNeedle"></div>
-        <div class="timing-mark" id="storyMark"></div>
-      </div>
-      <div class="row" style="justify-content:center;gap:16px;margin-top:12px">
-        <div class="odds-box"><div class="mini">你的停表</div><b id="storyPlayerStop">—</b></div>
-        <div class="odds-box"><div class="mini">敌方停表</div><b id="storyEnemyStop">—</b></div>
-        <div class="odds-box"><div class="mini">骰子加成</div><b id="storyDiceBonus">—</b></div>
-      </div>
-      <div class="row" style="justify-content:center;margin-top:14px">
-        <button id="storyStartTimer" class="btn cyan">开始计时</button>
-        <button id="storyStopTimer" class="btn primary hidden">停！</button>
-      </div>
-      <div class="log story-log" id="storyLog"></div>
-    </div>
-  </div>
-</div>
-
-<div id="storyLevelUp" class="screen hidden">
-  <div class="panel" style="min-width:min(420px,92vw)">
-    <div class="title" style="font-size:1.35rem">升级！</div>
-    <div class="subtitle" id="storyLvSummary" style="margin:10px 0">勇者变强了</div>
-    <div id="storyStatGain" class="list"></div>
-    <button id="storyLvContinue" class="btn cyan" style="margin-top:14px;width:100%">下一关</button>
-  </div>
-</div>
-
-<div id="storyEnding" class="screen hidden">
-  <div class="panel story-panel" style="text-align:center">
-    <div class="logo" style="font-size:2rem">👑</div>
-    <div class="title" style="margin:12px 0" id="storyEndTitle">公主得救了！</div>
-    <div class="story-text" id="storyEndBody"></div>
-    <div class="row" style="justify-content:center;margin-top:16px">
-      <button id="storyEndMenu" class="btn cyan">返回故事菜单</button>
-      <button id="storyEndMain" class="btn">主菜单</button>
-    </div>
-  </div>
-</div>
 
 <!-- App -->
 <div id="app" class="hidden">
@@ -473,6 +384,5 @@
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 <script src="game.js"></script>
-<script src="story.js"></script>
 </body>
 </html>

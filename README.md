@@ -11,12 +11,12 @@ my-games-site/
 ├── assets/hub.css
 ├── games/
 │   ├── time-stopper/
-│   │   └── index.html         # 时间终结者
+│   │   ├── index.html         # 时间终结者 + 故事模式 UI
+│   │   └── story.js           # 故事模式（营救公主 · 计时对决）
 │   └── dice-football/
 │       ├── index.html         # 投骰子吧！创造我的球会
 │       ├── style.css
 │       ├── game.js            # 经理生涯 + 存档 / CloudRecords
-│       ├── story.js           # 故事模式（营救公主）
 │       └── firebase-config.js # Firebase 占位（空=纯本地）
 └── README.md
 ```
@@ -25,8 +25,17 @@ my-games-site/
 
 | 游戏 | 路径 | 说明 |
 |------|------|------|
-| 时间终结者 | `games/time-stopper/` | 计时停表技能 |
-| 投骰子吧！创造我的球会 | `games/dice-football/` | 经理生涯 + **故事模式** |
+| 时间终结者 | `games/time-stopper/` | 计时停表 + **故事模式** |
+| 投骰子吧！创造我的球会 | `games/dice-football/` | 经理生涯（中超/中甲） |
+
+### TIME STOPPER · 故事模式
+
+- 主菜单进入「故事模式」：勇者闯关营救公主
+- 7 关叙事：小怪 + **中段暗影骑士** + **最终魔王**
+- 回合制战斗：双方用 TIME STOPPER 开始/停止，**最接近目标时间者发动攻击**（无骰子）
+- 关卡后战利品：再来一次**计时挑战**赚取背包道具，或选择永久 +HP / +ATK / +DEF
+- 背包道具：回复药、护盾、倍击、重停表
+- 进度键：`timeStopperStory_v1`（与英灵殿 `timeGameDB` 分离）
 
 ### 经理生涯（Football Manager 向）
 
@@ -34,13 +43,6 @@ my-games-site/
 - 本地 **3 存档槽** + 档案昵称；自动/手动保存；JSON 导入导出
 - 键名 `dice_football_v2`（自动迁移旧 `dice_football_save`）
 - 设备殿堂纪录；`CloudRecords` → Firestore `leaderboard`（配置后启用）
-
-### 故事模式
-
-- 主菜单进入「故事模式 · 营救公主」
-- 7 关叙事闯关：小怪 + **中段暗影骑士** + **最终魔王**
-- 回合制：双方朝目标毫秒停表（类时间终结者），更接近者攻击；骰子作平局微调
-- 关卡间升级（攻/防/生命）；进度存 `dice_football_story_v1`
 
 ## 本地预览
 
@@ -113,7 +115,9 @@ service cloud.firestore {
 
 当前仓库：`https://github.com/shanxz1982/my-games-site`
 
+Time Stopper：`https://shanxz1982.github.io/my-games-site/games/time-stopper/`
+
 ## 说明
 
-- 经理/故事存档均在浏览器 `localStorage`。
+- 经理存档与故事进度均在浏览器 `localStorage`（键名分离）。
 - 新增门户卡片：改 `index.html` 游戏条 + 可选 `assets/hub.css` 封面样式。

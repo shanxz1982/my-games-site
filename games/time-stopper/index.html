@@ -585,6 +585,163 @@
             }
         }
 
+    
+        /* === Story Mode === */
+        #storyRoot {
+            position: fixed; inset: 0; z-index: 220;
+            display: flex; align-items: center; justify-content: center;
+            padding: 64px 16px 28px;
+            background:
+                radial-gradient(circle at 50% 30%, rgba(34,211,238,0.1), transparent 45%),
+                rgba(3, 5, 15, 0.72);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            overflow-y: auto;
+        }
+        #storyRoot.hidden { display: none !important; }
+        .story-screen.hidden { display: none !important; }
+        .story-panel-card {
+            width: min(640px, 96vw);
+            background: var(--glass-strong);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 28px 24px;
+            backdrop-filter: blur(22px) saturate(1.4);
+            -webkit-backdrop-filter: blur(22px) saturate(1.4);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.06);
+            text-align: left;
+        }
+        .story-panel-card.center { text-align: center; }
+        .story-chapter-pill {
+            display: inline-block; padding: 4px 12px; border-radius: 999px;
+            border: 1px solid rgba(34,211,238,0.45); color: var(--cyan);
+            font-size: 0.75rem; letter-spacing: 0.14em; margin-bottom: 8px;
+        }
+        .story-narrate-text {
+            color: var(--muted); font-size: 0.98rem; line-height: 1.75;
+            white-space: pre-wrap; margin: 12px 0 18px;
+        }
+        .story-stat-row {
+            display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin: 12px 0 18px;
+        }
+        .story-stat-chip {
+            padding: 6px 12px; border-radius: 999px; font-size: 0.8rem; font-weight: 600;
+            background: rgba(34,211,238,0.1); border: 1px solid rgba(34,211,238,0.28); color: var(--light);
+        }
+        .story-btn-col { display: flex; flex-direction: column; gap: 10px; }
+        .story-btn-row { display: flex; flex-wrap: wrap; gap: 10px; justify-content: flex-end; margin-top: 8px; }
+        .story-battle-wrap { width: min(720px, 96vw); display: flex; flex-direction: column; gap: 12px; }
+        .story-top { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+        .story-arena {
+            display: flex; align-items: center; justify-content: space-between; gap: 12px;
+            padding: 18px 14px; border-radius: 18px;
+            border: 1px solid var(--glass-border); background: var(--glass-strong);
+            backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+            box-shadow: 0 12px 36px rgba(0,0,0,0.35);
+        }
+        .story-fighter { flex: 1; text-align: center; position: relative; }
+        .fighter-name { font-weight: 700; margin-bottom: 8px; }
+        .fighter-art { font-size: 2.4rem; margin-top: 8px; filter: drop-shadow(0 0 12px rgba(244,114,182,0.35)); }
+        .hero-art-badge { filter: drop-shadow(0 0 12px rgba(34,211,238,0.4)); }
+        .story-vs { font-weight: 900; color: var(--cyan); letter-spacing: 0.2em; font-size: 0.95rem; }
+        .story-hp-bar {
+            height: 12px; background: #1b2340; border: 1px solid #2c3556;
+            border-radius: 8px; overflow: hidden; margin: 0 auto; max-width: 180px;
+        }
+        .story-hp-bar > span {
+            display: block; height: 100%; width: 100%;
+            background: linear-gradient(90deg, #3ad17b, #22d3ee);
+            transition: width 0.25s;
+        }
+        .story-hp-bar.enemy > span { background: linear-gradient(90deg, #ff6868, #f472b6); }
+        .story-mini { font-size: 0.78rem; color: var(--muted); margin-top: 4px; }
+        .story-combat-panel {
+            background: var(--glass); border: 1px solid var(--glass-border);
+            border-radius: 16px; padding: 16px; text-align: center;
+            backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+        }
+        .timing-target { color: var(--muted); margin: 6px 0 10px; font-size: 0.9rem; }
+        .timing-target b { color: var(--cyan); font-size: 1.15rem; }
+        .timing-track {
+            position: relative; height: 18px; border-radius: 999px;
+            background: rgba(255,255,255,0.06); border: 1px solid rgba(34,211,238,0.25);
+            overflow: hidden; margin: 0 auto; max-width: 420px;
+        }
+        .timing-needle {
+            position: absolute; top: 0; bottom: 0; width: 3px; left: 0;
+            background: #fff; box-shadow: 0 0 10px rgba(34,211,238,0.9);
+        }
+        .timing-mark {
+            position: absolute; top: -3px; bottom: -3px; width: 2px; left: 50%;
+            background: var(--magenta); box-shadow: 0 0 8px rgba(244,114,182,0.8);
+        }
+        .story-odds-row {
+            display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; margin-top: 12px;
+        }
+        .story-odds-box {
+            min-width: 100px; padding: 8px 12px; border-radius: 12px;
+            background: rgba(34,211,238,0.08); border: 1px solid rgba(34,211,238,0.22);
+        }
+        .story-odds-box .mini { font-size: 0.72rem; color: var(--muted); }
+        .story-odds-box b { display: block; margin-top: 2px; color: #fff; }
+        .story-log {
+            height: 110px; overflow-y: auto; margin-top: 12px; text-align: left;
+            padding: 10px 12px; border-radius: 12px;
+            background: rgba(0,0,0,0.28); border: 1px solid rgba(34,211,238,0.15);
+            font-size: 0.82rem; line-height: 1.45; color: var(--muted);
+        }
+        .story-win { color: #6df9a3; }
+        .story-lose { color: #ff7676; }
+        .story-bag {
+            margin-top: 12px; padding: 10px; border-radius: 12px;
+            border: 1px dashed rgba(34,211,238,0.3); background: rgba(34,211,238,0.05);
+            text-align: left;
+        }
+        .story-bag h4 { font-size: 0.8rem; color: var(--cyan); letter-spacing: 0.1em; margin-bottom: 8px; }
+        .story-bag-list { display: flex; flex-wrap: wrap; gap: 8px; }
+        .story-bag-empty { font-size: 0.8rem; color: var(--muted); }
+        .story-item-btn {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 7px 12px; border-radius: 999px; cursor: pointer; font-family: inherit;
+            background: rgba(244,114,182,0.12); border: 1px solid rgba(244,114,182,0.35);
+            color: var(--light); font-size: 0.8rem; font-weight: 600;
+        }
+        .story-item-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+        .story-item-btn:hover:not(:disabled) { box-shadow: 0 0 14px rgba(244,114,182,0.3); }
+        .story-dmg-host { position: absolute; left: 50%; top: 0; transform: translateX(-50%); pointer-events: none; height: 0; }
+        .story-dmg-num {
+            position: absolute; left: 0; top: 0; font-weight: 900; font-size: 1.25rem;
+            color: #ff7676; text-shadow: 0 0 8px rgba(0,0,0,0.6);
+            animation: dmgFloat 0.85s ease-out forwards;
+            white-space: nowrap;
+        }
+        .story-dmg-num.heal { color: #6df9a3; }
+        .story-dmg-num.crit { color: #ffd700; font-size: 1.45rem; }
+        @keyframes dmgFloat {
+            0% { transform: translate(-50%, 0); opacity: 1; }
+            100% { transform: translate(-50%, -48px); opacity: 0; }
+        }
+        .story-reward-grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 14px;
+        }
+        @media (max-width: 560px) {
+            .story-reward-grid { grid-template-columns: 1fr; }
+            .story-arena { flex-direction: column; }
+        }
+        .mode-card.story-featured {
+            border-color: rgba(244,114,182,0.45);
+            background: linear-gradient(160deg, rgba(244,114,182,0.14), rgba(34,211,238,0.1));
+        }
+        .mode-card.story-featured .mode-name { color: #fff; }
+        .mode-grid-5 { grid-template-columns: repeat(5, 1fr) !important; }
+        @media (max-width: 1100px) {
+            .mode-grid-5 { grid-template-columns: repeat(2, 1fr) !important; }
+        }
+        @media (max-width: 640px) {
+            .mode-grid-5 { grid-template-columns: 1fr !important; }
+        }
+
+
     </style>
 </head>
 <body>
@@ -631,7 +788,11 @@
 
                 <div class="mode-panel">
                     <div class="mode-panel-label">模式选择</div>
-                    <div class="mode-grid">
+                    <div class="mode-grid mode-grid-5">
+                        <div class="mode-card story-featured" id="storyModeCard" role="button" tabindex="0">
+                            <div class="mode-name">故事模式</div>
+                            <div class="mode-desc">勇者闯关营救公主 · 计时对决 · 背包强化</div>
+                        </div>
                         <div class="mode-card" onclick="setMode('free')" role="button" tabindex="0">
                             <div class="mode-name">自由模式</div>
                             <div class="mode-desc">自选目标秒数，停在最准的那一帧</div>
@@ -744,6 +905,137 @@
                     </div>
                 </div>
                 <p class="kbd-hint">1–4 开始/停止 · Esc 返回菜单 · 点击名字可重命名</p>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Story Mode Root -->
+    <div id="storyRoot" class="hidden" aria-hidden="true">
+        <div id="storyHub" class="story-screen hidden">
+            <div class="story-panel-card center">
+                <div class="story-chapter-pill">STORY MODE</div>
+                <h2 class="menu-title" style="font-size:1.6rem">故事模式 · 营救公主</h2>
+                <p class="menu-sub">计时对决 · 战利品挑战 · 背包强化</p>
+                <div class="story-stat-row" id="storyHubStats"></div>
+                <p class="story-mini" id="storyHubProgress" style="margin-bottom:14px">—</p>
+                <div class="story-btn-col">
+                    <button type="button" class="hall-btn" id="storyNew">开始冒险</button>
+                    <button type="button" class="btn-secondary" id="storyContinue">继续冒险</button>
+                    <button type="button" class="btn-secondary" id="storyBackMenu">返回主菜单</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="storyNarration" class="story-screen hidden">
+            <div class="story-panel-card">
+                <div class="story-chapter-pill" id="storyChapterLabel">第 1 章</div>
+                <h2 style="font-size:1.35rem;margin:6px 0 4px" id="storyTitle">-</h2>
+                <div class="story-narrate-text" id="storyBody">-</div>
+                <div class="story-btn-row">
+                    <button type="button" class="main-action-btn" id="storyNarrNext" style="width:auto;padding:12px 28px">进入战斗</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="storyBattle" class="story-screen hidden">
+            <div class="story-battle-wrap">
+                <div class="story-top">
+                    <span class="pill" id="storyStagePill">关卡 1</span>
+                    <span class="pill" id="storyHeroLv">勇者 Lv.1</span>
+                    <span class="pill" id="storyBattleBagHint">背包 0 件</span>
+                    <span class="pill" id="storyBuffFlags">无增益</span>
+                    <button type="button" class="btn-secondary" id="storyFlee" style="margin-left:auto">撤退</button>
+                </div>
+                <div class="story-arena">
+                    <div class="story-fighter hero-side">
+                        <div class="story-dmg-host" id="storyHeroDmgHost"></div>
+                        <div class="fighter-name" id="storyHeroName">勇者</div>
+                        <div class="story-hp-bar"><span id="storyHeroHpBar"></span></div>
+                        <div class="story-mini" id="storyHeroHpText">HP 100/100</div>
+                        <div class="fighter-art hero-art-badge">⚔️</div>
+                    </div>
+                    <div class="story-vs">VS</div>
+                    <div class="story-fighter enemy-side">
+                        <div class="story-dmg-host" id="storyEnemyDmgHost"></div>
+                        <div class="fighter-name" id="storyEnemyName">敌人</div>
+                        <div class="story-hp-bar enemy"><span id="storyEnemyHpBar"></span></div>
+                        <div class="story-mini" id="storyEnemyHpText">HP 50/50</div>
+                        <div class="fighter-art" id="storyEnemyArt">👾</div>
+                    </div>
+                </div>
+                <div class="story-combat-panel">
+                    <div class="menu-sub" style="margin:0">计时对决 · 最接近目标时间者发动攻击</div>
+                    <div class="timing-target">目标时间 <b id="storyTargetMs">500</b> ms</div>
+                    <div class="timing-track">
+                        <div class="timing-needle" id="storyNeedle"></div>
+                        <div class="timing-mark" id="storyMark"></div>
+                    </div>
+                    <div class="story-odds-row">
+                        <div class="story-odds-box"><div class="mini">你的停表</div><b id="storyPlayerStop">—</b></div>
+                        <div class="story-odds-box"><div class="mini">敌方停表</div><b id="storyEnemyStop">—</b></div>
+                        <div class="story-odds-box"><div class="mini">增益</div><b id="storyBuffFlags2" style="font-size:0.85rem">—</b></div>
+                    </div>
+                    <div class="story-btn-row" style="justify-content:center;margin-top:14px">
+                        <button type="button" class="main-action-btn" id="storyStartTimer" style="width:auto;padding:12px 28px">开始计时</button>
+                        <button type="button" class="main-action-btn hidden" id="storyStopTimer" style="width:auto;padding:12px 28px;background:linear-gradient(135deg,#f472b6,#22d3ee)">停！</button>
+                        <button type="button" class="btn-secondary hidden" id="storyRerollBtn">重停表</button>
+                        <button type="button" class="btn-secondary hidden" id="storyConfirmStop">确认结算</button>
+                    </div>
+                    <div class="story-bag">
+                        <h4>背包 · 战斗中使用</h4>
+                        <div class="story-bag-list" id="storyBagList"></div>
+                    </div>
+                    <div class="story-log" id="storyLog"></div>
+                    <p class="kbd-hint">空格停表 · Esc 撤退到故事菜单</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="storyReward" class="story-screen hidden">
+            <div class="story-panel-card center">
+                <div class="story-chapter-pill">REWARD</div>
+                <h2 id="storyRewardTitle" style="font-size:1.4rem">关卡清除 · 战利品</h2>
+                <p class="menu-sub" id="storyRewardSummary">—</p>
+                <p style="margin:10px 0;color:var(--muted);font-size:0.9rem">二选一：计时挑战赚取道具，或选择永久属性点</p>
+                <div class="story-reward-grid">
+                    <div style="padding:14px;border-radius:14px;border:1px solid rgba(34,211,238,0.3);background:rgba(34,211,238,0.08)">
+                        <div style="font-weight:700;margin-bottom:8px">⏱️ 计时挑战 · 拿道具</div>
+                        <p class="story-mini" style="margin-bottom:8px">停在目标时间附近，误差越小奖励越好</p>
+                        <div class="timing-target" style="margin:4px 0 8px">目标 <b id="storyLootTargetMs">500</b> ms</div>
+                        <div class="timing-track" style="margin-bottom:10px">
+                            <div class="timing-needle" id="storyLootNeedle"></div>
+                            <div class="timing-mark" id="storyLootMark"></div>
+                        </div>
+                        <div class="story-btn-col">
+                            <button type="button" class="hall-btn" id="storyLootStartBtn" style="font-size:0.95rem">开始计时</button>
+                            <button type="button" class="main-action-btn hidden" id="storyLootStopBtn" style="width:100%;padding:12px;background:linear-gradient(135deg,#f472b6,#22d3ee)">停！</button>
+                        </div>
+                    </div>
+                    <div style="padding:14px;border-radius:14px;border:1px solid rgba(244,114,182,0.3);background:rgba(244,114,182,0.08)">
+                        <div style="font-weight:700;margin-bottom:8px">⬆ 永久强化</div>
+                        <div class="story-btn-col">
+                            <button type="button" class="btn-secondary story-stat-pick" data-stat="hp">+HP（最大生命 +18）</button>
+                            <button type="button" class="btn-secondary story-stat-pick" data-stat="atk">+ATK（攻击 +3）</button>
+                            <button type="button" class="btn-secondary story-stat-pick" data-stat="def">+DEF（防御 +2）</button>
+                        </div>
+                    </div>
+                </div>
+                <div id="storyRewardResult" style="margin-top:16px;font-size:1.1rem;font-weight:700;color:#fff">—</div>
+                <div id="storyRewardDetail" class="story-mini hidden" style="margin-top:6px">—</div>
+                <button type="button" class="main-action-btn hidden" id="storyRewardContinue" style="margin-top:16px;width:100%">继续旅程</button>
+            </div>
+        </div>
+
+        <div id="storyEnding" class="story-screen hidden">
+            <div class="story-panel-card center">
+                <div style="font-size:2.4rem;margin-bottom:8px">👑</div>
+                <h2 id="storyEndTitle" style="font-size:1.5rem">公主得救了！</h2>
+                <div class="story-narrate-text" id="storyEndBody" style="text-align:left"></div>
+                <div class="story-btn-row" style="justify-content:center">
+                    <button type="button" class="hall-btn" id="storyEndMenu" style="width:auto;padding:12px 22px">故事菜单</button>
+                    <button type="button" class="btn-secondary" id="storyEndMain">主菜单</button>
+                </div>
             </div>
         </div>
     </div>
@@ -1088,6 +1380,8 @@
             if (state.mode === 'multi') {
                 state.multiPlayers.forEach(p => { if (p.interval) clearInterval(p.interval); });
             }
+            const sr = document.getElementById('storyRoot');
+            if (sr) { sr.classList.add('hidden'); sr.setAttribute('aria-hidden', 'true'); }
             gameScreen.style.display = 'none';
             menuScreen.style.display = 'block';
             document.getElementById('countdownOverlay').classList.remove('show');
@@ -1579,5 +1873,6 @@
             requestAnimationFrame(animateConfetti);
         }
     </script>
+    <script src="story.js"></script>
 </body>
 </html>
