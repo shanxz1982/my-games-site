@@ -669,8 +669,35 @@ function bindStory() {
       return;
     }
     if (e.code === "Space" || e.key === " ") {
-      if (Story.phase === "battle" && Story.timing.running) { e.preventDefault(); stopTimer(false); }
-      if (Story.phase === "reward" && Story.rewardTiming.running) { e.preventDefault(); stopLootTiming(); }
+      const visible = (el) => el && !el.classList.contains("hidden") && getComputedStyle(el).display !== "none";
+      if (Story.phase === "battle") {
+        if (Story.timing.running) {
+          e.preventDefault();
+          e.stopPropagation();
+          stopTimer(false);
+          return;
+        }
+        if (visible($("#storyStartTimer"))) {
+          e.preventDefault();
+          e.stopPropagation();
+          startTimer();
+          return;
+        }
+      }
+      if (Story.phase === "reward") {
+        if (Story.rewardTiming.running) {
+          e.preventDefault();
+          e.stopPropagation();
+          stopLootTiming();
+          return;
+        }
+        if (!Story._rewardLocked && visible($("#storyLootStartBtn"))) {
+          e.preventDefault();
+          e.stopPropagation();
+          startLootTiming();
+          return;
+        }
+      }
     }
   }, true);
 }
