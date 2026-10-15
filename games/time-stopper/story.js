@@ -372,7 +372,9 @@ function rollEnemyNoise() {
   }
   const mag = minN + Math.random() * (maxN - minN);
   const sign = Math.random() < 0.5 ? -1 : 1;
-  return roundSec(sign * mag);
+  // Preserve sign: roundSec() clamps to >=0 and would zero negative noise
+  // (that made enemyStopSec === enemyTargetSec and eDist always/often 0).
+  return Math.round(sign * mag * 100) / 100;
 }
 
 function updateTargetUI() {
@@ -510,6 +512,8 @@ function onEnemyAutoStop(elapsedSec) {
   if (Story.timing.enemyStopped) return;
   Story.timing.enemyStopped = true;
   const stopSec = elapsedSec != null ? elapsedSec : Story.timing.enemyStopSec;
+  // Only record stop display / enemySec. Never write stop back into
+  // enemyTargetSec or refresh the target UI from the stop time.
   Story.timing.enemySec = roundSec(stopSec);
   setText("storyEnemyTimer", fmtSec(Story.timing.enemySec));
   setText("storyEnemyStop", "停表 " + fmtSec(Story.timing.enemySec) + " 秒");
@@ -533,15 +537,19 @@ function startTimer(fromReroll) {
     Story.timing.playerStopped = false;
     Story.timing.enemyStopped = false;
     Story.timing.awaitingRerollConfirm = false;
+    // Sanitize in place only — do NOT replace target with stop.
     Story.timing.playerTargetSec = roundSec(asSec(Story.timing.playerTargetSec));
     Story.timing.enemyTargetSec = roundSec(asSec(Story.timing.enemyTargetSec));
+    const fixedEnemyTarget = Story.timing.enemyTargetSec;
     const noise = rollEnemyNoise();
+    // stop = fixed target + difficulty noise; never write stop back into target
     Story.timing.enemyStopSec = roundSec(clamp(
-      Story.timing.enemyTargetSec + noise,
+      fixedEnemyTarget + noise,
       0.50,
       12.00
     ));
     resetTimingDisplays();
+    updateTargetUI(); // re-assert fixed targets in the UI for this round
     const cmp = $("#storyTargetCompare");
     if (cmp) cmp.textContent = "—";
   } else {
@@ -652,6 +660,8 @@ function confirmStopAfterRerollOption() {
 }
 
 function commitTurn() {
+  // Distances vs the round's fixed targets (set at battle/turn start) —
+  // never vs stop time. enemyStopSec / enemySec must not overwrite these.
   const pTarget = Story.timing.playerTargetSec;
   const eTarget = Story.timing.enemyTargetSec;
   const playerSec = Story.timing.playerSec;
