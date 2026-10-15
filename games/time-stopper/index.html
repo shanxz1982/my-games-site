@@ -669,23 +669,49 @@
         }
         .story-btn-col { display: flex; flex-direction: column; gap: 10px; }
         .story-btn-row { display: flex; flex-wrap: wrap; gap: 10px; justify-content: flex-end; margin-top: 8px; }
-        .story-battle-wrap { width: min(720px, 96vw); display: flex; flex-direction: column; gap: 12px; }
+        .story-battle-wrap { width: min(780px, 96vw); display: flex; flex-direction: column; gap: 12px; }
         .story-top { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-        .story-arena {
-            display: flex; align-items: center; justify-content: space-between; gap: 12px;
-            padding: 18px 14px; border-radius: 18px;
-            border: 1px solid var(--glass-border); background: var(--glass-strong);
+        .story-char-row {
+            display: grid;
+            grid-template-columns: 1fr minmax(110px, 160px) minmax(200px, 1.15fr);
+            align-items: center;
+            gap: 10px 14px;
+            padding: 14px 16px;
+            border-radius: 18px;
+            border: 1px solid var(--glass-border);
+            background: var(--glass-strong);
             backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
             box-shadow: 0 12px 36px rgba(0,0,0,0.35);
+            position: relative;
         }
-        .story-fighter { flex: 1; text-align: center; position: relative; }
-        .fighter-name { font-weight: 700; margin-bottom: 8px; }
-        .fighter-art { font-size: 2.4rem; margin-top: 8px; filter: drop-shadow(0 0 12px rgba(244,114,182,0.35)); }
-        .hero-art-badge { filter: drop-shadow(0 0 12px rgba(34,211,238,0.4)); }
-        .story-vs { font-weight: 900; color: var(--cyan); letter-spacing: 0.2em; font-size: 0.95rem; }
+        .story-char-row.enemy-row {
+            background: linear-gradient(135deg, rgba(244,114,182,0.08), rgba(15,18,32,0.72));
+            border-color: rgba(244,114,182,0.28);
+        }
+        .story-char-row.hero-row {
+            background: linear-gradient(135deg, rgba(34,211,238,0.08), rgba(15,18,32,0.72));
+            border-color: rgba(34,211,238,0.28);
+        }
+        .story-char-spacer { min-height: 1px; }
+        .story-char-art-wrap {
+            position: relative;
+            display: flex; align-items: center; justify-content: center;
+            min-height: 88px;
+        }
+        .story-char-art {
+            font-size: 3.4rem; line-height: 1;
+            filter: drop-shadow(0 0 16px rgba(244,114,182,0.4));
+            user-select: none;
+        }
+        .hero-art-badge { filter: drop-shadow(0 0 16px rgba(34,211,238,0.45)); }
+        .story-char-stats {
+            display: flex; flex-direction: column; gap: 6px;
+            text-align: left; min-width: 0;
+        }
+        .fighter-name { font-weight: 700; font-size: 1.05rem; color: #fff; }
         .story-hp-bar {
             height: 12px; background: #1b2340; border: 1px solid #2c3556;
-            border-radius: 8px; overflow: hidden; margin: 0 auto; max-width: 180px;
+            border-radius: 8px; overflow: hidden; width: 100%; max-width: 260px;
         }
         .story-hp-bar > span {
             display: block; height: 100%; width: 100%;
@@ -693,16 +719,71 @@
             transition: width 0.25s;
         }
         .story-hp-bar.enemy > span { background: linear-gradient(90deg, #ff6868, #f472b6); }
-        .story-mini { font-size: 0.78rem; color: var(--muted); margin-top: 4px; }
+        .story-mini { font-size: 0.78rem; color: var(--muted); }
+        .story-stat-line { display: flex; flex-wrap: wrap; gap: 6px; }
+        .story-buff-chips {
+            display: inline-flex; flex-wrap: wrap; gap: 6px; align-items: center;
+            min-height: 26px; font-size: 0.8rem; color: var(--cyan);
+        }
+        .story-buff-chips .buff-pill {
+            padding: 3px 10px; border-radius: 999px; font-size: 0.72rem; font-weight: 700;
+            background: rgba(244,114,182,0.14); border: 1px solid rgba(244,114,182,0.35); color: #fecdd3;
+        }
+        .story-buff-chips .buff-empty { color: var(--muted); font-weight: 500; }
         .story-combat-panel {
             background: var(--glass); border: 1px solid var(--glass-border);
-            border-radius: 16px; padding: 16px; text-align: center;
+            border-radius: 16px; padding: 14px 14px 12px; text-align: center;
             backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
         }
-        .timing-target { color: var(--muted); margin: 6px 0 10px; font-size: 0.9rem; }
-        .timing-target b { color: var(--cyan); font-size: 1.15rem; }
+        .story-timing-grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+            margin: 10px 0 4px;
+        }
+        .story-timing-card {
+            background: rgba(255,255,255,0.04); border: 1px solid rgba(34,211,238,0.18);
+            border-radius: 14px; padding: 14px 12px; text-align: center;
+            transition: border-color 0.25s, box-shadow 0.25s, background 0.25s;
+            position: relative;
+        }
+        .story-timing-card.player {
+            border-color: rgba(34,211,238,0.35);
+            box-shadow: inset 0 0 24px rgba(34,211,238,0.05);
+        }
+        .story-timing-card.enemy {
+            border-color: rgba(244,114,182,0.35);
+            box-shadow: inset 0 0 24px rgba(244,114,182,0.05);
+        }
+        .story-timing-card .player-timer {
+            font-size: 2.35rem; font-family: "Courier New", monospace; margin: 4px 0 2px;
+            text-shadow: 0 0 14px rgba(34,211,238,0.35); color: #fff;
+        }
+        .story-timing-card.enemy .player-timer {
+            text-shadow: 0 0 14px rgba(244,114,182,0.4); color: #fecdd3;
+        }
+        .story-timing-card .player-status { color: var(--muted); min-height: 18px; margin-bottom: 6px; font-size: 0.82rem; }
+        .story-timing-card .player-btn {
+            background: linear-gradient(135deg, rgba(34,211,238,0.85), rgba(99,102,241,0.75));
+            color: #061018; padding: 10px 18px; border-radius: 10px; font-weight: 700;
+            border: 1px solid rgba(255,255,255,0.2); box-shadow: 0 4px 14px rgba(34,211,238,0.25);
+            cursor: pointer; font-family: inherit; min-width: 96px;
+        }
+        .story-timing-card .player-btn.stop-btn {
+            background: linear-gradient(135deg, #f472b6, #22d3ee);
+        }
+        .story-timing-card .player-btn:hover { filter: brightness(1.08); }
+        .story-timing-card .player-btn:disabled {
+            opacity: 0.5; cursor: not-allowed; filter: none; box-shadow: none;
+            background: rgba(255,255,255,0.08); color: var(--muted);
+        }
+        .story-card-actions {
+            display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 8px;
+        }
+        .story-card-track { margin: 8px auto 4px; max-width: 100%; }
+        .timing-target { color: var(--muted); margin: 4px 0 2px; font-size: 0.82rem; }
+        .timing-target b { color: var(--cyan); font-size: 1.05rem; }
+        .timing-target .enemy-target { color: var(--magenta); }
         .timing-track {
-            position: relative; height: 18px; border-radius: 999px;
+            position: relative; height: 14px; border-radius: 999px;
             background: rgba(255,255,255,0.06); border: 1px solid rgba(34,211,238,0.25);
             overflow: hidden; margin: 0 auto; max-width: 420px;
         }
@@ -720,7 +801,6 @@
         .timing-mark.enemy {
             background: var(--magenta); box-shadow: 0 0 8px rgba(244,114,182,0.85);
         }
-        .timing-target .enemy-target { color: var(--magenta); }
         .story-diff-row {
             display: flex; justify-content: center; gap: 8px; flex-wrap: wrap;
             margin: 4px 0 10px;
@@ -743,7 +823,7 @@
             background: linear-gradient(135deg, #f472b6, #fb7185); color: #1a0510;
         }
         .story-odds-row {
-            display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; margin-top: 12px;
+            display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; margin-top: 10px;
         }
         .story-odds-box {
             min-width: 100px; padding: 8px 12px; border-radius: 12px;
@@ -752,7 +832,7 @@
         .story-odds-box .mini { font-size: 0.72rem; color: var(--muted); }
         .story-odds-box b { display: block; margin-top: 2px; color: #fff; }
         .story-log {
-            height: 110px; overflow-y: auto; margin-top: 12px; text-align: left;
+            height: 110px; overflow-y: auto; margin-top: 2px; text-align: left;
             padding: 10px 12px; border-radius: 12px;
             background: rgba(0,0,0,0.28); border: 1px solid rgba(34,211,238,0.15);
             font-size: 0.82rem; line-height: 1.45; color: var(--muted);
@@ -760,13 +840,13 @@
         .story-win { color: #6df9a3; }
         .story-lose { color: #ff7676; }
         .story-bag {
-            margin-top: 12px; padding: 10px; border-radius: 12px;
+            margin-top: 4px; padding: 8px 10px; border-radius: 12px;
             border: 1px dashed rgba(34,211,238,0.3); background: rgba(34,211,238,0.05);
             text-align: left;
         }
-        .story-bag h4 { font-size: 0.8rem; color: var(--cyan); letter-spacing: 0.1em; margin-bottom: 8px; }
+        .story-bag h4 { font-size: 0.75rem; color: var(--cyan); letter-spacing: 0.1em; margin-bottom: 6px; }
         .story-bag-list { display: flex; flex-wrap: wrap; gap: 8px; }
-        .story-bag-empty { font-size: 0.8rem; color: var(--muted); }
+        .story-bag-empty { font-size: 0.78rem; color: var(--muted); }
         .story-item-btn {
             display: inline-flex; align-items: center; gap: 6px;
             padding: 7px 12px; border-radius: 999px; cursor: pointer; font-family: inherit;
@@ -775,7 +855,7 @@
         }
         .story-item-btn:disabled { opacity: 0.45; cursor: not-allowed; }
         .story-item-btn:hover:not(:disabled) { box-shadow: 0 0 14px rgba(244,114,182,0.3); }
-        .story-dmg-host { position: absolute; left: 50%; top: 0; transform: translateX(-50%); pointer-events: none; height: 0; }
+        .story-dmg-host { position: absolute; left: 50%; top: 8px; transform: translateX(-50%); pointer-events: none; height: 0; z-index: 3; }
         .story-dmg-num {
             position: absolute; left: 0; top: 0; font-weight: 900; font-size: 1.25rem;
             color: #ff7676; text-shadow: 0 0 8px rgba(0,0,0,0.6);
@@ -791,10 +871,20 @@
         .story-reward-grid {
             display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 14px;
         }
-        @media (max-width: 560px) {
+        @media (max-width: 640px) {
+            .story-char-row {
+                grid-template-columns: 1fr;
+                justify-items: center;
+                text-align: center;
+            }
+            .story-char-spacer { display: none; }
+            .story-char-stats { align-items: center; text-align: center; width: 100%; }
+            .story-hp-bar { max-width: 100%; }
+            .story-stat-line, .story-buff-chips { justify-content: center; }
+            .story-timing-grid { grid-template-columns: 1fr; }
             .story-reward-grid { grid-template-columns: 1fr; }
-            .story-arena { flex-direction: column; }
         }
+
         .mode-card.story-featured {
             border-color: rgba(244,114,182,0.45);
             background: linear-gradient(160deg, rgba(244,114,182,0.14), rgba(34,211,238,0.1));
@@ -1264,56 +1354,94 @@
             <div class="story-battle-wrap">
                 <div class="story-top">
                     <span class="pill" id="storyStagePill">关卡 1</span>
-                    <span class="pill" id="storyHeroLv">勇者 Lv.1</span>
                     <span class="pill" id="storyBattleBagHint">背包 0 件</span>
-                    <span class="pill" id="storyBuffFlags">无增益</span>
                     <button type="button" class="btn-secondary" id="storyFlee" style="margin-left:auto">撤退</button>
                 </div>
-                <div class="story-arena">
-                    <div class="story-fighter hero-side">
-                        <div class="story-dmg-host" id="storyHeroDmgHost"></div>
-                        <div class="fighter-name" id="storyHeroName">勇者</div>
-                        <div class="story-hp-bar"><span id="storyHeroHpBar"></span></div>
-                        <div class="story-mini" id="storyHeroHpText">HP 100/100</div>
-                        <div class="fighter-art hero-art-badge">⚔️</div>
-                    </div>
-                    <div class="story-vs">VS</div>
-                    <div class="story-fighter enemy-side">
+
+                <div class="story-char-row enemy-row">
+                    <div class="story-char-spacer" aria-hidden="true"></div>
+                    <div class="story-char-art-wrap">
                         <div class="story-dmg-host" id="storyEnemyDmgHost"></div>
+                        <div class="story-char-art" id="storyEnemyArt">👾</div>
+                    </div>
+                    <div class="story-char-stats">
                         <div class="fighter-name" id="storyEnemyName">敌人</div>
                         <div class="story-hp-bar enemy"><span id="storyEnemyHpBar"></span></div>
                         <div class="story-mini" id="storyEnemyHpText">HP 50/50</div>
-                        <div class="fighter-art" id="storyEnemyArt">👾</div>
+                        <div class="story-stat-line">
+                            <span class="story-stat-chip">ATK <b id="storyEnemyAtk">0</b></span>
+                            <span class="story-stat-chip">DEF <b id="storyEnemyDef">0</b></span>
+                        </div>
                     </div>
                 </div>
+
                 <div class="story-combat-panel">
                     <div class="menu-sub" style="margin:0">计时对决 · 各自逼近自己的目标，更近者发动攻击</div>
-                    <div class="timing-target">你的目标 <b id="storyPlayerTargetMs">500</b> ms · 敌方目标 <b id="storyEnemyTargetMs" class="enemy-target">500</b> ms</div>
-                    <div class="timing-track">
-                        <div class="timing-needle" id="storyNeedle"></div>
-                        <div class="timing-needle enemy" id="storyEnemyNeedle"></div>
-                        <div class="timing-mark" id="storyMark"></div>
-                        <div class="timing-mark enemy" id="storyEnemyMark"></div>
+                    <div class="story-timing-grid">
+                        <div class="story-timing-card player">
+                            <div class="player-keyhint">空格 · 你</div>
+                            <div class="player-name">你</div>
+                            <div class="timing-target">目标 <b id="storyPlayerTargetMs">500</b> ms</div>
+                            <div class="player-timer" id="storyPlayerTimer">0.00</div>
+                            <div class="player-status" id="storyPlayerStatus">等待开始</div>
+                            <div class="timing-track story-card-track">
+                                <div class="timing-needle" id="storyNeedle"></div>
+                                <div class="timing-mark" id="storyMark"></div>
+                            </div>
+                            <div class="story-mini" id="storyPlayerStop">停表 —</div>
+                            <div class="story-card-actions">
+                                <button type="button" class="player-btn" id="storyStartTimer">开始</button>
+                                <button type="button" class="player-btn stop-btn hidden" id="storyStopTimer">停止</button>
+                                <button type="button" class="btn-secondary hidden" id="storyRerollBtn">重停表</button>
+                                <button type="button" class="btn-secondary hidden" id="storyConfirmStop">确认结算</button>
+                            </div>
+                        </div>
+                        <div class="story-timing-card enemy">
+                            <div class="player-keyhint">自动 · 敌</div>
+                            <div class="player-name" id="storyEnemyCardName">敌人</div>
+                            <div class="timing-target">目标 <b id="storyEnemyTargetMs" class="enemy-target">500</b> ms</div>
+                            <div class="player-timer" id="storyEnemyTimer">0.00</div>
+                            <div class="player-status" id="storyEnemyStatus">待机 · 自动</div>
+                            <div class="timing-track story-card-track">
+                                <div class="timing-needle enemy" id="storyEnemyNeedle"></div>
+                                <div class="timing-mark enemy" id="storyEnemyMark"></div>
+                            </div>
+                            <div class="story-mini" id="storyEnemyStop">停表 —</div>
+                            <div class="story-card-actions">
+                                <button type="button" class="player-btn" id="storyEnemyAutoBtn" disabled>自动</button>
+                            </div>
+                        </div>
                     </div>
                     <div class="story-odds-row">
-                        <div class="story-odds-box"><div class="mini">你的停表</div><b id="storyPlayerStop">—</b></div>
-                        <div class="story-odds-box"><div class="mini">敌方停表</div><b id="storyEnemyStop">—</b></div>
                         <div class="story-odds-box"><div class="mini">目标对比</div><b id="storyTargetCompare" style="font-size:0.85rem">—</b></div>
                     </div>
-                    <div class="story-mini" id="storyBuffFlags2" style="margin-top:8px">无增益</div>
-                    <div class="story-btn-row" style="justify-content:center;margin-top:14px">
-                        <button type="button" class="main-action-btn" id="storyStartTimer" style="width:auto;padding:12px 28px">开始计时</button>
-                        <button type="button" class="main-action-btn hidden" id="storyStopTimer" style="width:auto;padding:12px 28px;background:linear-gradient(135deg,#f472b6,#22d3ee)">停！</button>
-                        <button type="button" class="btn-secondary hidden" id="storyRerollBtn">重停表</button>
-                        <button type="button" class="btn-secondary hidden" id="storyConfirmStop">确认结算</button>
-                    </div>
-                    <div class="story-bag">
-                        <h4>背包 · 战斗中使用</h4>
-                        <div class="story-bag-list" id="storyBagList"></div>
-                    </div>
-                    <div class="story-log" id="storyLog"></div>
-                    <p class="kbd-hint">空格 = 开始/停止（仅你）· 敌方自动停表 · Esc 撤退</p>
                 </div>
+
+                <div class="story-char-row hero-row">
+                    <div class="story-char-spacer" aria-hidden="true"></div>
+                    <div class="story-char-art-wrap">
+                        <div class="story-dmg-host" id="storyHeroDmgHost"></div>
+                        <div class="story-char-art hero-art-badge">⚔️</div>
+                    </div>
+                    <div class="story-char-stats">
+                        <div class="fighter-name" id="storyHeroName">勇者</div>
+                        <div class="story-mini" id="storyHeroLv">勇者 Lv.1</div>
+                        <div class="story-hp-bar"><span id="storyHeroHpBar"></span></div>
+                        <div class="story-mini" id="storyHeroHpText">HP 100/100</div>
+                        <div class="story-stat-line">
+                            <span class="story-stat-chip">ATK <b id="storyHeroAtk">14</b></span>
+                            <span class="story-stat-chip">DEF <b id="storyHeroDef">4</b></span>
+                        </div>
+                        <div class="story-buff-chips" id="storyBuffFlags"><span class="buff-empty">无增益</span></div>
+                        <div class="story-bag">
+                            <h4>背包 · 战斗中使用</h4>
+                            <div class="story-bag-list" id="storyBagList"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="story-log" id="storyLog"></div>
+                <p class="kbd-hint">空格 = 开始/停止（仅你）· 敌方自动停表 · Esc 撤退</p>
             </div>
         </div>
 
