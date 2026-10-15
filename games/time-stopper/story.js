@@ -4,7 +4,7 @@
 
 const STORY_KEY = "timeStopperStory_v2";
 const STORY_KEY_OLD = "timeStopperStory_v1";
-const PORTRAIT_VER = "8bit1";
+const PORTRAIT_VER = "8bit2";
 const $ = (s, root) => (root || document).querySelector(s);
 const $$ = (s, root) => Array.from((root || document).querySelectorAll(s));
 
