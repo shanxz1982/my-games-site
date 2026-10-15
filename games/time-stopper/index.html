@@ -637,6 +637,8 @@
             -webkit-backdrop-filter: blur(8px);
             overflow-y: auto;
         }
+        /* Global hide utility — used by story/online buttons & panels */
+        .hidden { display: none !important; }
         #storyRoot.hidden { display: none !important; }
         .story-screen.hidden { display: none !important; }
         .story-panel-card {
@@ -1295,7 +1297,7 @@
                         <div class="story-timing-card player">
                             <div class="player-keyhint">空格 · 你</div>
                             <div class="player-name">你</div>
-                            <div class="timing-target">目标 <b id="storyPlayerTargetMs">5.00</b> 秒</div>
+                            <div class="timing-target">目标 <b id="storyPlayerTargetSec">5.00</b> 秒</div>
                             <div class="player-timer" id="storyPlayerTimer">0.00</div>
                             <div class="player-status" id="storyPlayerStatus">等待开始</div>
                             <div class="story-mini" id="storyPlayerStop">停表 —</div>
@@ -1309,7 +1311,7 @@
                         <div class="story-timing-card enemy">
                             <div class="player-keyhint">自动 · 敌</div>
                             <div class="player-name" id="storyEnemyCardName">敌人</div>
-                            <div class="timing-target">目标 <b id="storyEnemyTargetMs" class="enemy-target">5.00</b> 秒</div>
+                            <div class="timing-target">目标 <b id="storyEnemyTargetSec" class="enemy-target">5.00</b> 秒</div>
                             <div class="player-timer" id="storyEnemyTimer">0.00</div>
                             <div class="player-status" id="storyEnemyStatus">待机 · 自动</div>
                             <div class="story-mini" id="storyEnemyStop">停表 —</div>
@@ -1361,7 +1363,7 @@
                     <div style="padding:14px;border-radius:14px;border:1px solid rgba(34,211,238,0.3);background:rgba(34,211,238,0.08)">
                         <div style="font-weight:700;margin-bottom:8px">⏱️ 计时挑战 · 拿道具</div>
                         <p class="story-mini" style="margin-bottom:8px">停在目标时间附近，误差越小奖励越好</p>
-                        <div class="timing-target" style="margin:4px 0 8px">目标 <b id="storyLootTargetMs">5.00</b> 秒</div>
+                        <div class="timing-target" style="margin:4px 0 8px">目标 <b id="storyLootTargetSec">5.00</b> 秒</div>
                         <div class="player-timer" id="storyLootTimer" style="font-size:1.8rem;margin:6px 0;">0.00</div>
                         <div class="story-btn-col">
                             <button type="button" class="hall-btn" id="storyLootStartBtn" style="font-size:0.95rem">开始计时</button>
@@ -2692,8 +2694,8 @@
     </div>
 
     <script src="firebase-config.js"></script>
-    <script src="story.js"></script>
-    <script src="online.js"></script>
+    <script src="story.js?v=1792039723"></script>
+    <script src="online.js?v=1792039723"></script>
     <script>
     /* Load Firebase after UI so multi modal/lobby bind even if CDN is slow/blocked */
     (function () {

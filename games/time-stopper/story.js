@@ -186,18 +186,33 @@ function setHpBar(barEl, textEl, hp, max) {
 }
 
 
+/** Coerce leftover ms-scale values (e.g. 500) into seconds. */
+function asSec(v) {
+  if (v == null || !Number.isFinite(v)) return 0;
+  if (v > 30) return v / 1000;
+  return v;
+}
+
 function fmtSec(sec) {
   if (sec == null || !Number.isFinite(sec)) return "0.00";
-  return Math.max(0, sec).toFixed(2);
+  return Math.max(0, asSec(sec)).toFixed(2);
 }
 
 function roundSec(sec) {
-  return Math.round(Math.max(0, sec) * 100) / 100;
+  return Math.round(Math.max(0, asSec(sec)) * 100) / 100;
 }
 
 function setText(id, value) {
   const el = $("#" + id);
   if (el) el.textContent = value;
+}
+
+function setBtnVisible(el, show) {
+  if (!el) return;
+  try {
+    el.classList.toggle("hidden", !show);
+    el.style.display = show ? "" : "none";
+  } catch (e) {}
 }
 
 function syncBattleStatDisplays() {
@@ -330,7 +345,7 @@ function showNarration() {
 }
 
 function rollPlayerTarget(ch) {
-  let t = ch.targetSec;
+  let t = asSec(ch.targetSec);
   if (Story.difficulty === "hard") {
     t += (Math.random() * 0.40) - 0.20;
   }
@@ -339,9 +354,9 @@ function rollPlayerTarget(ch) {
 
 function rollEnemyTarget(ch) {
   if (ch.enemyTargetSec != null && Number.isFinite(ch.enemyTargetSec)) {
-    return roundSec(clamp(ch.enemyTargetSec, 3.00, 9.00));
+    return roundSec(clamp(asSec(ch.enemyTargetSec), 3.00, 9.00));
   }
-  const base = ch.targetSec;
+  const base = asSec(ch.targetSec);
   let offset = Math.random() * 5.60 - 2.80;
   if (Math.abs(offset) < 0.05) offset = Math.random() < 0.5 ? -0.40 : 0.40;
   return roundSec(clamp(base + offset, 3.00, 9.00));
@@ -361,10 +376,12 @@ function rollEnemyNoise() {
 }
 
 function updateTargetUI() {
+  Story.timing.playerTargetSec = roundSec(asSec(Story.timing.playerTargetSec));
+  Story.timing.enemyTargetSec = roundSec(asSec(Story.timing.enemyTargetSec));
   const p = Story.timing.playerTargetSec;
   const e = Story.timing.enemyTargetSec;
-  const pEl = $("#storyPlayerTargetMs");
-  const eEl = $("#storyEnemyTargetMs");
+  const pEl = $("#storyPlayerTargetSec");
+  const eEl = $("#storyEnemyTargetSec");
   if (pEl) pEl.textContent = fmtSec(p);
   if (eEl) eEl.textContent = fmtSec(e);
 }
@@ -413,11 +430,10 @@ function beginBattle() {
   const cmp = $("#storyTargetCompare");
   if (cmp) cmp.textContent = "—";
   $("#storyLog").innerHTML = "";
-  $("#storyStartTimer").classList.remove("hidden");
-  $("#storyStopTimer").classList.add("hidden");
-  $("#storyRerollBtn").classList.add("hidden");
-  const confirmBtn = $("#storyConfirmStop");
-  if (confirmBtn) confirmBtn.classList.add("hidden");
+  setBtnVisible($("#storyStartTimer"), true);
+  setBtnVisible($("#storyStopTimer"), false);
+  setBtnVisible($("#storyRerollBtn"), false);
+  setBtnVisible($("#storyConfirmStop"), false);
   syncBattleStatDisplays();
   renderBag();
   renderHeroStats();
@@ -474,7 +490,10 @@ function useItem(idx) {
 }
 
 function cancelTimingAnim() {
-  if (Story.timing.raf) cancelAnimationFrame(Story.timing.raf);
+  if (Story.timing.raf) {
+    try { cancelAnimationFrame(Story.timing.raf); } catch (e) {}
+    try { clearInterval(Story.timing.raf); } catch (e2) {}
+  }
   Story.timing.raf = 0;
 }
 
@@ -514,6 +533,8 @@ function startTimer(fromReroll) {
     Story.timing.playerStopped = false;
     Story.timing.enemyStopped = false;
     Story.timing.awaitingRerollConfirm = false;
+    Story.timing.playerTargetSec = roundSec(asSec(Story.timing.playerTargetSec));
+    Story.timing.enemyTargetSec = roundSec(asSec(Story.timing.enemyTargetSec));
     const noise = rollEnemyNoise();
     Story.timing.enemyStopSec = roundSec(clamp(
       Story.timing.enemyTargetSec + noise,
@@ -536,36 +557,44 @@ function startTimer(fromReroll) {
   Story.timing.playerRunning = true;
   Story.timing.start = performance.now();
 
-  $("#storyStartTimer").classList.add("hidden");
-  $("#storyStopTimer").classList.remove("hidden");
-  $("#storyRerollBtn").classList.add("hidden");
-  const confirmBtn = $("#storyConfirmStop");
-  if (confirmBtn) confirmBtn.classList.add("hidden");
-  setText("storyPlayerStatus", "计时中…");
-  if (!fromReroll) setText("storyEnemyStatus", "自动计时中…");
-  renderBag();
-
-  const tick = (now) => {
+  // Schedule ticking FIRST so a later DOM throw cannot block the live display.
+  cancelTimingAnim();
+  const tick = () => {
     if (!Story.timing.active && !Story.timing.playerRunning) return;
-    const elapsed = (now - Story.timing.start) / 1000;
+    const elapsed = (performance.now() - Story.timing.start) / 1000;
 
     if (Story.timing.playerRunning) {
-      setText("storyPlayerTimer", fmtSec(elapsed));
+      const el = $("#storyPlayerTimer");
+      if (el) el.textContent = fmtSec(elapsed);
     }
 
     if (!Story.timing.enemyStopped) {
       if (elapsed >= Story.timing.enemyStopSec) {
         onEnemyAutoStop(Story.timing.enemyStopSec);
       } else {
-        setText("storyEnemyTimer", fmtSec(elapsed));
+        const el = $("#storyEnemyTimer");
+        if (el) el.textContent = fmtSec(elapsed);
       }
     }
 
-    if (Story.timing.playerRunning || !Story.timing.enemyStopped) {
-      Story.timing.raf = requestAnimationFrame(tick);
+    if (!(Story.timing.playerRunning || !Story.timing.enemyStopped)) {
+      cancelTimingAnim();
     }
   };
-  Story.timing.raf = requestAnimationFrame(tick);
+  Story.timing.raf = setInterval(tick, 16);
+  tick();
+
+  try {
+    setBtnVisible($("#storyStartTimer"), false);
+    setBtnVisible($("#storyStopTimer"), true);
+    setBtnVisible($("#storyRerollBtn"), false);
+    setBtnVisible($("#storyConfirmStop"), false);
+    setText("storyPlayerStatus", "计时中…");
+    if (!fromReroll) setText("storyEnemyStatus", "自动计时中…");
+    renderBag();
+  } catch (e) {
+    /* button UI must never abort the running timer */
+  }
 }
 
 function stopTimer(fromRerollConfirmPath) {
@@ -577,16 +606,15 @@ function stopTimer(fromRerollConfirmPath) {
   setText("storyPlayerTimer", fmtSec(Story.timing.playerSec));
   setText("storyPlayerStop", "停表 " + fmtSec(Story.timing.playerSec) + " 秒");
   setText("storyPlayerStatus", "已停表");
-  $("#storyStopTimer").classList.add("hidden");
+  setBtnVisible($("#storyStopTimer"), false);
 
   if (!fromRerollConfirmPath && Story.buffs.rerollReady) {
     Story.timing.awaitingRerollConfirm = true;
-    $("#storyRerollBtn").classList.remove("hidden");
-    $("#storyStartTimer").classList.add("hidden");
+    setBtnVisible($("#storyRerollBtn"), true);
+    setBtnVisible($("#storyStartTimer"), false);
     setText("storyPlayerStatus", "可重停或确认");
     log("已停表 " + fmtSec(Story.timing.playerSec) + " 秒。可用「重停」或确认结算。");
-    const confirmBtn = $("#storyConfirmStop");
-    if (confirmBtn) confirmBtn.classList.remove("hidden");
+    setBtnVisible($("#storyConfirmStop"), true);
     if (Story.timing.enemyStopped) {
       cancelTimingAnim();
     }
@@ -604,9 +632,8 @@ function consumeReroll() {
   if (!Story.buffs.rerollReady) return;
   Story.buffs.rerollReady = false;
   updateBuffFlags();
-  $("#storyRerollBtn").classList.add("hidden");
-  const confirmBtn = $("#storyConfirmStop");
-  if (confirmBtn) confirmBtn.classList.add("hidden");
+  setBtnVisible($("#storyRerollBtn"), false);
+  setBtnVisible($("#storyConfirmStop"), false);
   Story.timing.awaitingRerollConfirm = false;
   log("重停表！重新计时（敌方停表保留）……");
   cancelTimingAnim();
@@ -615,9 +642,8 @@ function consumeReroll() {
 }
 
 function confirmStopAfterRerollOption() {
-  const confirmBtn = $("#storyConfirmStop");
-  if (confirmBtn) confirmBtn.classList.add("hidden");
-  $("#storyRerollBtn").classList.add("hidden");
+  setBtnVisible($("#storyConfirmStop"), false);
+  setBtnVisible($("#storyRerollBtn"), false);
   Story.buffs.rerollReady = false;
   Story.timing.awaitingRerollConfirm = false;
   updateBuffFlags();
@@ -719,11 +745,10 @@ function scheduleNextTurn() {
     resetTimingDisplays();
     const cmp2 = $("#storyTargetCompare");
     if (cmp2) cmp2.textContent = "—";
-    $("#storyStartTimer").classList.remove("hidden");
-    $("#storyStopTimer").classList.add("hidden");
-    $("#storyRerollBtn").classList.add("hidden");
-    const confirmBtn2 = $("#storyConfirmStop");
-    if (confirmBtn2) confirmBtn2.classList.add("hidden");
+    setBtnVisible($("#storyStartTimer"), true);
+    setBtnVisible($("#storyStopTimer"), false);
+    setBtnVisible($("#storyRerollBtn"), false);
+    setBtnVisible($("#storyConfirmStop"), false);
     renderBag();
     log("—— 下一回合 · 你 " + fmtSec(Story.timing.playerTargetSec) + "秒 / 敌 " + fmtSec(Story.timing.enemyTargetSec) + "秒 ——");
   }, 420);
@@ -745,9 +770,10 @@ function openReward(afterFinal) {
     " · " + diffDef().label;
   $("#storyRewardResult").textContent = "—";
   $("#storyRewardDetail").classList.add("hidden");
-  $("#storyLootStartBtn").classList.remove("hidden");
-  $("#storyLootStartBtn").disabled = false;
-  $("#storyLootStopBtn").classList.add("hidden");
+  setBtnVisible($("#storyLootStartBtn"), true);
+  const lootStart = $("#storyLootStartBtn");
+  if (lootStart) lootStart.disabled = false;
+  setBtnVisible($("#storyLootStopBtn"), false);
   $$(".story-stat-pick").forEach((b) => { b.disabled = false; });
   $("#storyRewardContinue").classList.add("hidden");
   Story._afterFinalReward = !!afterFinal;
@@ -757,15 +783,16 @@ function openReward(afterFinal) {
   Story.rewardTiming.targetSec = targets[Story.chapterIndex % targets.length];
   Story.rewardTiming.running = false;
   if (Story.rewardTiming.raf) cancelAnimationFrame(Story.rewardTiming.raf);
-  $("#storyLootTargetMs").textContent = fmtSec(Story.rewardTiming.targetSec);
+  $("#storyLootTargetSec").textContent = fmtSec(Story.rewardTiming.targetSec);
   setText("storyLootTimer", "0.00");
 }
 
 function lockRewardChoices() {
   Story._rewardLocked = true;
-  $("#storyLootStartBtn").disabled = true;
-  $("#storyLootStartBtn").classList.add("hidden");
-  $("#storyLootStopBtn").classList.add("hidden");
+  const lootStartLock = $("#storyLootStartBtn");
+  if (lootStartLock) lootStartLock.disabled = true;
+  setBtnVisible($("#storyLootStartBtn"), false);
+  setBtnVisible($("#storyLootStopBtn"), false);
   $$(".story-stat-pick").forEach((b) => { b.disabled = true; });
   $("#storyRewardContinue").classList.remove("hidden");
 }
@@ -781,8 +808,8 @@ function startLootTiming() {
   if (Story._rewardLocked || Story.rewardTiming.running || Story.phase !== "reward") return;
   Story.rewardTiming.running = true;
   Story.rewardTiming.start = performance.now();
-  $("#storyLootStartBtn").classList.add("hidden");
-  $("#storyLootStopBtn").classList.remove("hidden");
+  setBtnVisible($("#storyLootStartBtn"), false);
+  setBtnVisible($("#storyLootStopBtn"), true);
   $$(".story-stat-pick").forEach((b) => { b.disabled = true; });
   setText("storyLootTimer", "0.00");
   const tick = (now) => {
@@ -902,6 +929,8 @@ function enterStoryMode() {
 }
 
 window.enterStoryMode = enterStoryMode;
+window.__storyStartTimer = startTimer;
+window.__storyStopTimer = stopTimer;
 window.StoryMode = { open: enterStoryMode, active: () => Story.active, key: STORY_KEY };
 
 function bindStory() {
@@ -923,10 +952,32 @@ function bindStory() {
   });
   $("#storyBackMenu") && ($("#storyBackMenu").onclick = () => closeStoryToMenu());
   $("#storyNarrNext") && ($("#storyNarrNext").onclick = () => beginBattle());
-  $("#storyStartTimer") && ($("#storyStartTimer").onclick = () => startTimer(false));
-  $("#storyStopTimer") && ($("#storyStopTimer").onclick = () => stopTimer(false));
-  $("#storyRerollBtn") && ($("#storyRerollBtn").onclick = () => consumeReroll());
-  $("#storyConfirmStop") && ($("#storyConfirmStop").onclick = () => confirmStopAfterRerollOption());
+  const startBtn = $("#storyStartTimer");
+  if (startBtn) {
+    startBtn.onclick = null;
+    startBtn.addEventListener("click", (ev) => {
+      ev.preventDefault();
+      startTimer(false);
+    });
+  }
+  const stopBtn = $("#storyStopTimer");
+  if (stopBtn) {
+    stopBtn.onclick = null;
+    stopBtn.addEventListener("click", (ev) => {
+      ev.preventDefault();
+      stopTimer(false);
+    });
+  }
+  const rerollBtn = $("#storyRerollBtn");
+  if (rerollBtn) {
+    rerollBtn.onclick = null;
+    rerollBtn.addEventListener("click", () => consumeReroll());
+  }
+  const confirmStopBtn = $("#storyConfirmStop");
+  if (confirmStopBtn) {
+    confirmStopBtn.onclick = null;
+    confirmStopBtn.addEventListener("click", () => confirmStopAfterRerollOption());
+  }
   $("#storyFlee") && ($("#storyFlee").onclick = () => {
     if (!confirm("撤退将回到故事菜单（保留进度）")) return;
     cancelTimingAnim();
