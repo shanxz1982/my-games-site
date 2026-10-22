@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="640" viewBox="0 0 1024 640">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1a0533"/>
+      <stop offset="40%" stop-color="#4a148c"/>
+      <stop offset="70%" stop-color="#7b1fa2"/>
+      <stop offset="100%" stop-color="#12002a"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="70%" cy="40%" r="50%">
+      <stop offset="0%" stop-color="#e040fb" stop-opacity="0.5"/>
+      <stop offset="100%" stop-color="#4a148c" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1024" height="640" fill="url(#bg)"/>
+  <rect width="1024" height="640" fill="url(#glow)"/>
+  <circle cx="750" cy="220" r="180" fill="#2d0854" opacity="0.6"/>
+  <circle cx="780" cy="200" r="100" fill="#6a1b9a" opacity="0.4"/>
+  <!-- abstract face suggestion -->
+  <ellipse cx="720" cy="280" rx="90" ry="110" fill="#3d1060" opacity="0.7"/>
+  <circle cx="690" cy="260" r="12" fill="#f0e6ff" opacity="0.8"/>
+  <circle cx="750" cy="260" r="12" fill="#f0e6ff" opacity="0.8"/>
+  <path d="M680 320 Q720 350 760 320" stroke="#c9a0ff" stroke-width="4" fill="none" opacity="0.6"/>
+  <!-- cracks / energy lines -->
+  <path d="M100 500 Q300 400 500 480 T900 420" stroke="#ce93d8" stroke-width="2" fill="none" opacity="0.35"/>
+  <path d="M50 200 Q250 300 450 180 T850 250" stroke="#ab47bc" stroke-width="1.5" fill="none" opacity="0.3"/>
+</svg>

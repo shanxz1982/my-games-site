@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="640" viewBox="0 0 1024 640">
+  <rect width="1024" height="640" fill="none"/>
+  <!-- stylized orange-haired figure silhouette -->
+  <g transform="translate(420,80)">
+    <ellipse cx="90" cy="70" rx="55" ry="60" fill="#f5c48a"/>
+    <path d="M40 40 Q90 -20 140 40 L150 90 Q90 70 30 90 Z" fill="#ff6a1a"/>
+    <path d="M20 30 Q70 -40 100 20 L110 80 Q60 50 15 80 Z" fill="#ff8c2a"/>
+    <path d="M50 50 Q120 -10 160 50 L155 100 Q100 75 45 95 Z" fill="#e85a10"/>
+    <rect x="50" y="120" width="80" height="140" rx="8" fill="#1a1a2e"/>
+    <path d="M50 130 L20 280 L55 270 L70 160 Z" fill="#1a1a2e"/>
+    <path d="M130 130 L170 280 L135 270 L120 160 Z" fill="#1a1a2e"/>
+    <rect x="55" y="260" width="28" height="120" fill="#2a2a3e"/>
+    <rect x="97" y="260" width="28" height="120" fill="#2a2a3e"/>
+    <!-- sword -->
+    <rect x="165" y="100" width="12" height="220" rx="2" fill="#c0c8d8" transform="rotate(-25 171 210)"/>
+    <rect x="155" y="95" width="32" height="14" rx="2" fill="#8b4513" transform="rotate(-25 171 102)"/>
+    <circle cx="70" cy="65" r="6" fill="#222"/>
+    <circle cx="105" cy="65" r="6" fill="#222"/>
+    <path d="M75 85 Q90 95 105 85" stroke="#c4785a" stroke-width="3" fill="none"/>
+  </g>
+</svg>
