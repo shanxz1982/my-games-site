@@ -345,10 +345,31 @@ function tilePattern(img, scaleX, scaleY, offsetX, offsetY) {
   return canvas;
 }
 
-function bilerp(corners, u, v) {
-  const x = (1 - u) * (1 - v) * corners[0].x + u * (1 - v) * corners[1].x + u * v * corners[2].x + (1 - u) * v * corners[3].x;
-  const y = (1 - u) * (1 - v) * corners[0].y + u * (1 - v) * corners[1].y + u * v * corners[2].y + (1 - u) * v * corners[3].y;
-  return { x, y };
+function edgeOutward(a, b, opposite, amount) {
+  const dx = b.x - a.x;
+  const dy = b.y - a.y;
+  const length = Math.hypot(dx, dy) || 1;
+  let nx = -dy / length;
+  let ny = dx / length;
+  const midX = (a.x + b.x) / 2;
+  const midY = (a.y + b.y) / 2;
+  if ((opposite.x - midX) * nx + (opposite.y - midY) * ny > 0) {
+    nx = -nx;
+    ny = -ny;
+  }
+  return { x: nx * amount, y: ny * amount };
+}
+
+/** Grow a clip by a pixel so the shared edge of two triangles does not leave a crack. */
+function expandTriangle(p0, p1, p2, amount) {
+  const points = [p0, p1, p2];
+  return points.map((point, index) => {
+    const previous = points[(index + 2) % 3];
+    const next = points[(index + 1) % 3];
+    const first = edgeOutward(previous, point, next, amount);
+    const second = edgeOutward(point, next, previous, amount);
+    return { x: point.x + first.x + second.x, y: point.y + first.y + second.y };
+  });
 }
 
 function drawImageTriangle(ctx, img, p0, p1, p2, uv0, uv1, uv2) {
@@ -363,40 +384,26 @@ function drawImageTriangle(ctx, img, p0, p1, p2, uv0, uv1, uv2) {
   const b = det(p0.y, p1.y, p2.y) / denom;
   const d = detC(p0.y, p1.y, p2.y) / denom;
   const f = detE(p0.y, p1.y, p2.y) / denom;
+  const [c0, c1, c2] = expandTriangle(p0, p1, p2, 1.5);
   ctx.save();
   ctx.beginPath();
-  ctx.moveTo(p0.x, p0.y);
-  ctx.lineTo(p1.x, p1.y);
-  ctx.lineTo(p2.x, p2.y);
+  ctx.moveTo(c0.x, c0.y);
+  ctx.lineTo(c1.x, c1.y);
+  ctx.lineTo(c2.x, c2.y);
   ctx.closePath();
   ctx.clip();
+  ctx.imageSmoothingEnabled = true;
   ctx.transform(a, b, c, d, e, f);
   ctx.drawImage(img, 0, 0);
   ctx.restore();
 }
 
 function drawQuadImage(ctx, img, corners, uvs) {
-  const steps = 4;
-  const pix = uvs.map(([u, v]) => ({ x: u * img.width, y: v * img.height }));
-  for (let i = 0; i < steps; i += 1) {
-    for (let j = 0; j < steps; j += 1) {
-      const u0 = i / steps;
-      const u1 = (i + 1) / steps;
-      const v0 = j / steps;
-      const v1 = (j + 1) / steps;
-      const p00 = bilerp(corners, u0, v0);
-      const p10 = bilerp(corners, u1, v0);
-      const p11 = bilerp(corners, u1, v1);
-      const p01 = bilerp(corners, u0, v1);
-      const s00 = bilerp(pix, u0, v0);
-      const s10 = bilerp(pix, u1, v0);
-      const s11 = bilerp(pix, u1, v1);
-      const s01 = bilerp(pix, u0, v1);
-      const uv = (point) => ({ u: point.x, v: point.y });
-      drawImageTriangle(ctx, img, p00, p10, p11, uv(s00), uv(s10), uv(s11));
-      drawImageTriangle(ctx, img, p00, p11, p01, uv(s00), uv(s11), uv(s01));
-    }
-  }
+  // One quad, two triangles. A finer mesh left a white grid and diagonal
+  // cracks where the canvas clips met; those read as lines on the print.
+  const pix = uvs.map(([u, v]) => ({ u: u * img.width, v: v * img.height }));
+  drawImageTriangle(ctx, img, corners[0], corners[1], corners[2], pix[0], pix[1], pix[2]);
+  drawImageTriangle(ctx, img, corners[0], corners[2], corners[3], pix[0], pix[2], pix[3]);
 }
 
 function average(verts) {
