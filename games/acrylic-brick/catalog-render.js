@@ -1,7 +1,9 @@
 /**
  * Canvas product stills for acrylic-brick designs.
  * Layer math matches the designer: stacked boxes (acrylic) and
- * horizontal pattern planes, with the same upright pose as the showcase.
+ * horizontal pattern planes. The catalog always stands the stack up
+ * the way the showcase shelf does (rotate +90° around X and seat it
+ * on the ground). Drag and the turn buttons then yaw around Y.
  * One canvas context — no extra WebGL contexts — so a grid of bricks stays cheap.
  */
 
@@ -204,7 +206,9 @@ const BOX_FACES = [
 function buildModel(project) {
   const layers = Array.isArray(project?.layers) ? project.layers : [];
   const positions = stackPositions(layers);
-  const upright = project?.stackPose === "upright";
+  // Showcase uses stackPose ?? "upright". The catalog lookbook always
+  // stands the brick up, including designs saved while lying flat.
+  const upright = true;
   let maxLength = 0;
   for (const layer of layers) {
     if (layer?.visible === false) continue;
